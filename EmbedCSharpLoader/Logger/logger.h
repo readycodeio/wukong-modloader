@@ -24,7 +24,7 @@ concept is_formatable = requires {
 
 static inline std::wstring get_wtimestamp() {
     using namespace std::chrono;
-    auto now     = system_clock::now();
+    auto now = system_clock::now();
     auto seconds = time_point_cast<std::chrono::seconds>(now);
     auto fraction = now - seconds;
 
@@ -38,7 +38,7 @@ static inline std::wstring get_wtimestamp() {
 
     std::wostringstream oss;
     oss << std::put_time(&local_tm, L"%m-%d %H:%M:%S");
-    oss << '.' << std::setw(3) << std::setfill(L'0')
+    oss << L'.' << std::setw(3) << std::setfill(L'0')
         << std::chrono::duration_cast<std::chrono::milliseconds>(fraction).count();
     return oss.str();
 }
@@ -46,7 +46,7 @@ static inline std::wstring get_wtimestamp() {
 
 static inline std::string get_timestamp() {
     using namespace std::chrono;
-    auto now     = system_clock::now();
+    auto now = system_clock::now();
     auto seconds = time_point_cast<std::chrono::seconds>(now);
     auto fraction = now - seconds;
 
@@ -71,11 +71,11 @@ static std::mutex g_log_mutex;
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
-void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs)
+void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
 {
     std::lock_guard lock(g_log_mutex);
 
-    std::wstring message = std::vformat(fmt.get(), std::make_wformat_args(fmtArgs...));
+    std::wstring message = std::vformat(fmt.get(), std::make_wformat_args(fmt_args...));
 
     std::wcout << get_wtimestamp()
                << L" [" << prefix << L"] "
@@ -86,11 +86,11 @@ void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
-void log_impl(const std::string& prefix, std::format_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs)
+void log_impl(const std::string& prefix, std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
 {
     std::lock_guard lock(g_log_mutex);
 
-    std::string message = std::vformat(fmt.get(), std::make_format_args(fmtArgs...));
+    std::string message = std::vformat(fmt.get(), std::make_format_args(fmt_args...));
 
     std::cout << get_timestamp()
               << " [" << prefix << "] "
@@ -101,51 +101,51 @@ void log_impl(const std::string& prefix, std::format_string<FormatArgs...> fmt, 
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
-void log_debug(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl(L"D", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_debug(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"D", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
-void log_info(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl(L"I", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_info(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"I", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
-void log_warn(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl(L"W", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_warn(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"W", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
-void log_error(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl(L"E", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_error(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"E", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
-void log_debug(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl("D", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_debug(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("D", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
-void log_info(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl("I", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_info(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("I", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
-void log_warn(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl("W", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_warn(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("W", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
-void log_error(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmtArgs) {
-    log_impl("E", fmt, std::forward<FormatArgs>(fmtArgs)...);
+void log_error(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("E", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
 

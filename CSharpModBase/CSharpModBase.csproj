@@ -1,28 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <AssemblyVersion>0.0.6.0</AssemblyVersion>
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <AssemblyVersion>0.0.6.0</AssemblyVersion>
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SharpDX" Version="4.2.0" />
-    <PackageReference Include="SharpDX.XInput" Version="4.2.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="SharpDX" Version="4.2.0" />
+        <PackageReference Include="SharpDX.XInput" Version="4.2.0" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="UnrealEngine.Runtime">
-      <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <Reference Include="UnrealEngine.Runtime">
+            <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+    </ItemGroup>
 
 </Project>

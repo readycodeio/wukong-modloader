@@ -17,7 +17,7 @@ std::string load_param_from_file(const std::filesystem::path& file_path, const s
     if (std::ifstream(abs_file_path).good())
     {
         log_debug(L"Loading {} from file: '{}'", utf8_to_wstring(param_name), abs_file_path.wstring());
-        std::ifstream param_file(file_path);
+        std::ifstream param_file(abs_file_path);
         param_value = std::string((std::istreambuf_iterator(param_file)), std::istreambuf_iterator<char>());
         param_value = trim(param_value);
     }

@@ -118,7 +118,7 @@ public class CSharpModManager
 
         if (pathMatch.Success)
         {
-            Common.ModDir = pathMatch.Groups[1].Value;
+            Common.ModDirSuffix = pathMatch.Groups[1].Value;
             Log.Debug($"Mod folder override: {Common.ModDir}");
         }
     }
@@ -141,7 +141,7 @@ public class CSharpModManager
 
             if (pathMatch.Success)
             {
-                Common.ModDir = pathMatch.Groups[1].Value;
+                Common.ModDirSuffix = pathMatch.Groups[1].Value;
                 Log.Debug($"Mod folder override: {Common.ModDir}");
             }
             else
@@ -172,7 +172,7 @@ public class CSharpModManager
             foreach (var dir in allDirs)
             {
                 var modName = Path.GetFileName(dir);
-                if (modName == "Common" || modName == "ReflectionOnly")
+                if (modName == "Common" || modName == "ReflectionOnly" || modName == "Overrides")
                     continue;
 
                 dirs.Add(dir);
@@ -183,7 +183,6 @@ public class CSharpModManager
             {
                 var disabledPath = Path.Combine(dir, "disabled.txt");
                 var orderPath = Path.Combine(dir, "order.txt");
-                var developPath = Path.Combine(dir, "develop.txt");
                 int? loadOrder = null;
                 if (File.Exists(orderPath))
                 {
@@ -330,7 +329,6 @@ public class CSharpModManager
             }
 
             var csharpModType = typeof(ICSharpMod);
-            var csharpModExType = typeof(ICSharpModEx);
             foreach (var dir in dirs)
             {
                 var modName = Path.GetFileName(dir);

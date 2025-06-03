@@ -4,6 +4,7 @@
 #include <fstream>
 #include <optional>
 
+#include "Config/path.h"
 #include "Logger/logger.h"
 #include "Memory/common.h"
 #include "Memory/patch.h"
@@ -134,7 +135,7 @@ bool can_load_symbols()
 }
 
 
-bool load_debugger_symbols(const std::filesystem::path& path)
+bool load_debugger_symbols(const std::filesystem::path& dir)
 {
     if (!can_load_symbols())
     {
@@ -144,22 +145,26 @@ bool load_debugger_symbols(const std::filesystem::path& path)
     
     log_debug("Loading symbols for bundled assemblies");
 
-    for (const auto& entry : std::filesystem::directory_iterator(path))
+    auto full_dir = get_mod_base_path() / dir;
+    
+    std::error_code ec;
+    const std::filesystem::directory_iterator full_dir_end;
+    for (auto it = std::filesystem::directory_iterator(full_dir, ec); !ec && it != full_dir_end; it.increment(ec))
     {
-        if (entry.is_regular_file() && entry.path().extension() == ".pdb")
+        if (it->is_regular_file(ec) && it->path().extension() == ".pdb")
         {
-            log_debug(L"Loading PDB file: {}", entry.path().wstring());
-            std::ifstream pdb_file(entry.path(), std::ios::in | std::ios::binary | std::ios::ate);
+            std::ifstream pdb_file(it->path(), std::ios::in | std::ios::binary | std::ios::ate);
             
             if (pdb_file)
             {
+                log_debug(L"Loading PDB file: {}", it->path().wstring());
                 auto size = pdb_file.tellg();
-                log_debug("File size is: {} bytes", (size_t)size);
+                log_debug("File size is: {} bytes", static_cast<size_t>(size));
                 pdb_file.seekg(0, std::ios::beg);
                 auto buffer = new char[size];
                 pdb_file.read(buffer, size);
 
-                auto assembly_name = entry.path().stem().string() + ".dll";
+                auto assembly_name = it->path().stem().string() + ".dll";
                 auto assembly_name_cstr = new char[assembly_name.size() + 1];
                 strcpy_s(assembly_name_cstr, assembly_name.size() + 1, assembly_name.c_str());
                 

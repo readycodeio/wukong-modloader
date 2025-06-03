@@ -1,12 +1,15 @@
 ﻿#include "assembly.h"
 
 #include <filesystem>
+#include <fstream>
 
 #include "Mono/assembly-internals.h"
 
 #include <optional>
+#include <algorithm>
 #include <windows.h>
 
+#include "Config/path.h"
 #include "Mono/image.h"
 #include "Logger/logger.h"
 #include "Memory/scanner.h"
@@ -56,10 +59,22 @@ void*** get_bundles_ptr()
 }
 
 
+MonoBundledAssembly** get_mono_register_bundled_assemblies()
+{
+    auto bundles_ptr = get_bundles_ptr();
+    if (!bundles_ptr)
+    {
+        log_error("Cannot get mono_register_bundled_assemblies due to missing bundles_ptr.");
+        return nullptr;
+    }
+
+    return reinterpret_cast<MonoBundledAssembly**>(*bundles_ptr);
+}
+
+
 bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies)
 {
     auto bundles_ptr = get_bundles_ptr();
-
     if (!bundles_ptr)
     {
         log_error("Cannot register bundled assemblies due to missing bundles_ptr.");
@@ -68,6 +83,87 @@ bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies)
 
     *bundles_ptr = reinterpret_cast<void**>(assemblies);
     return true;
+}
+
+
+bool load_assembly_bundles(const std::filesystem::path& dir)
+{
+    auto full_dir = get_mod_base_path() / dir;
+
+    auto old_bundles = get_mono_register_bundled_assemblies();
+    std::vector<MonoBundledAssembly*> new_bundles_arr;
+
+    std::vector<int> used_indices = {};
+    
+    std::error_code ec;
+    const std::filesystem::directory_iterator full_dir_end;
+    for (auto it = std::filesystem::directory_iterator(full_dir, ec); !ec && it != full_dir_end; it.increment(ec))
+    {
+        if (it->is_regular_file(ec) && it->path().extension() == ".dll")
+        {
+            std::ifstream dll_file(it->path(), std::ios::in | std::ios::binary | std::ios::ate);
+            
+            if (dll_file)
+            {
+                log_debug(L"Loading DLL override: {}", it->path().wstring());
+                auto size = dll_file.tellg();
+                log_debug("File size is: {} bytes", static_cast<size_t>(size));
+                dll_file.seekg(0, std::ios::beg);
+                auto buffer = new char[size];
+                dll_file.read(buffer, size);
+
+                auto assembly_name = it->path().stem().string() + ".dll";
+
+                auto found_old = false;
+                for (int i = 0; old_bundles[i]; ++i)
+                {
+                    auto old_bundle = old_bundles[i];
+                    if (assembly_name == old_bundle->name)
+                    {
+                        log_debug("Replacing existing bundle: {}", assembly_name);
+                        auto new_bundle = glib_new0<MonoBundledAssembly>();
+                        new_bundle->name = old_bundle->name;
+                        new_bundle->data = reinterpret_cast<const unsigned char*>(buffer);
+                        new_bundle->size = size;
+                        new_bundles_arr.push_back(new_bundle);
+                        used_indices.push_back(i);
+                        found_old = true;
+                        break;
+                    }
+                }
+
+                if (!found_old)
+                {
+                    auto assembly_name_cstr = new char[assembly_name.size() + 1];
+                    strcpy_s(assembly_name_cstr, assembly_name.size() + 1, assembly_name.c_str());
+                    
+                    log_debug("Appending new bundle: {}", assembly_name);
+                    auto new_bundle = glib_new0<MonoBundledAssembly>();
+                    new_bundle->data = reinterpret_cast<const unsigned char*>(buffer);
+                    new_bundle->size = size;
+                    new_bundle->name = assembly_name_cstr;
+                    new_bundles_arr.push_back(new_bundle);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; old_bundles[i]; ++i)
+    {
+        if (std::ranges::find(used_indices, i) != used_indices.end())
+            continue;
+        auto old_bundle = old_bundles[i];
+        new_bundles_arr.push_back(old_bundle);
+    }
+
+    auto new_bundles = new MonoBundledAssembly*[new_bundles_arr.size() + 1];
+    for (size_t i = 0; i < new_bundles_arr.size(); ++i)
+    {
+        new_bundles[i] = new_bundles_arr[i];
+    }
+    new_bundles[new_bundles_arr.size()] = nullptr;
+
+    return mono_register_bundled_assemblies(new_bundles);
 }
 
 
@@ -101,13 +197,13 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
         log_error("mono_assembly_request_open function pointer is null.");
         return nullptr;
     }
+
+    auto full_filename = get_mod_base_path() / filename;
     
-    wchar_t full_filename[MAX_PATH];
-    GetFullPathNameW(filename.c_str(), MAX_PATH, full_filename, nullptr);
     char full_filenameA[MAX_PATH];
     // convert to utf-8 to support Chinese path
-    WideCharToMultiByte(CP_UTF8, 0, full_filename, MAX_PATH, full_filenameA, MAX_PATH, nullptr, nullptr);
-    log_info("Loading CSharpManager from: {}", full_filenameA);
+    WideCharToMultiByte(CP_UTF8, 0, full_filename.c_str(), MAX_PATH, full_filenameA, MAX_PATH, nullptr, nullptr);
+    log_info(L"Loading CSharpManager from: {}", full_filename.c_str());
     
     MonoAssemblyOpenRequest open_request{};
     auto status = MONO_IMAGE_OK;
@@ -115,13 +211,13 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
 
     if (assembly == nullptr)
     {
-        log_error("mono_assembly_request_open status failed.");;
+        log_error("mono_assembly_request_open status failed.");
         return nullptr;
     }
     
     if (status != MONO_IMAGE_OK)
     {
-        log_error("mono_assembly_request_open failed.");;
+        log_error("mono_assembly_request_open failed.");
         return nullptr;
     }
     

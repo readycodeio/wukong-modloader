@@ -5,8 +5,8 @@ namespace CSharpModBase;
     
 public static class Log
 {
-    private static string DateTimeString => DateTime.Now.ToString("MM-dd HH:mm:ss");  // .fff
-    private static readonly StreamWriter LogFile = File.CreateText("CSharpLog.txt");
+    private static string DateTimeString => DateTime.Now.ToString("MM-dd HH:mm:ss.fff");  // .fff
+    private static readonly StreamWriter LogFile = File.CreateText(Path.Combine(Common.BaseDir, "CSharpLog.txt"));
 
     public static void Loop()
     {

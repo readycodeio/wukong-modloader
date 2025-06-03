@@ -42,6 +42,8 @@ struct MonoBundledAssembly
 
 void*** get_bundles_ptr();
 bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies);
+MonoBundledAssembly** get_mono_register_bundled_assemblies();
+bool load_assembly_bundles(const std::filesystem::path& dir);
 
 void* get_mono_assembly_request_open_ptr();
 void* mono_assembly_request_open(const std::filesystem::path& filename);

@@ -31,8 +31,12 @@ void** get_mono_get_root_domain_ptr()
             return nullptr;
         }
 
+        log_debug_ptr("domain_user_func_ptr", domain_user_func_ptr);
+
         auto domain_offset = *reinterpret_cast<int*>(domain_user_func_ptr + 10);
         g_domain_ptr = reinterpret_cast<void**>(domain_user_func_ptr + 10 + domain_offset + 4);
+        
+        log_debug_ptr("domain_ptr", g_domain_ptr.value());
     }
 
     return g_domain_ptr.value();
@@ -68,7 +72,7 @@ void* get_ves_icall_System_AppDomain_ExecuteAssembly_ptr()
         }
 
         log_debug_ptr("ves_icall_System_AppDomain_ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly);
-        g_ves_icall_System_AppDomain_ExecuteAssembly_ptr = reinterpret_cast<ves_icall_System_AppDomain_ExecuteAssembly_t*>(ves_icall_System_AppDomain_ExecuteAssembly);
+        g_ves_icall_System_AppDomain_ExecuteAssembly_ptr = reinterpret_cast<ves_icall_System_AppDomain_ExecuteAssembly_t>(ves_icall_System_AppDomain_ExecuteAssembly);
     }
 
     return g_ves_icall_System_AppDomain_ExecuteAssembly_ptr.value();
@@ -86,13 +90,13 @@ int ves_icall_System_AppDomain_ExecuteAssembly(void* app_domain, void* assembly)
     
     MonoAppDomain mono_app_domain{};
     mono_app_domain.data = app_domain;
+    MonoAppDomain* mono_app_domain_ptr = &mono_app_domain;
+    MonoAppDomainHandle mono_app_domain_handle{&mono_app_domain_ptr};
     MonoReflectionAssembly mono_reflection_assembly{};
     mono_reflection_assembly.assembly = assembly;
+    MonoReflectionAssembly* mono_reflection_assembly_ptr = &mono_reflection_assembly;
+    MonoReflectionAssemblyHandle mono_reflection_assembly_handle{&mono_reflection_assembly_ptr};
     MonoError mono_error{};
-    MonoAppDomainHandle mono_app_domain_handle{};
-    *mono_app_domain_handle.Ref() = &mono_app_domain;
-    MonoReflectionAssemblyHandle mono_reflection_assembly_handle{};
-    *mono_reflection_assembly_handle.Ref() = &mono_reflection_assembly;
     void* args = nullptr;
 
     return func(mono_app_domain_handle, mono_reflection_assembly_handle, &args, &mono_error);

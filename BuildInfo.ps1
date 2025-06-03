@@ -13,11 +13,14 @@ $managedDestDir = "Binaries/Win64/CSharpLoader"
 $pakDestDir = "Content/Paks/LogicMods"
 
 # Define the files to copy
-$nativeFiles = @("version.dll")
+$nativeFiles = @(
+    "version.dll",
+    "version.pdb"
+)
 $managedFiles = @(
     "0Harmony.dll",
-    "EmbedCSharpManager.Managed.dll",
-    "EmbedCSharpManager.Managed.pdb",
+    "EmbedCSharpLoader.Managed.bin",
+    "EmbedCSharpLoader.Managed.pdb",
     "CSharpModBase.dll",
     "CSharpModBase.pdb",
     "Mono.Cecil.dll",
