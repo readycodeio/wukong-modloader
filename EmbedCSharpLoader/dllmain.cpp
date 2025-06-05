@@ -72,6 +72,15 @@ static void post_runtime_load_callback()
 
     log_info("Domain initialized");
 
+    if (load_assembly_bundles(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides"))
+    {
+        log_info("Loaded assembly bundle overrides.");
+    }
+    else
+    {
+        log_error("Failed to load assembly bundle overrides.");
+    }
+    
     g_assembly = mono_assembly_request_open(std::filesystem::path(L"CSharpLoader") / L"EmbedCSharpLoader.Managed.bin");
     if (!g_assembly)
     {
@@ -79,8 +88,8 @@ static void post_runtime_load_callback()
         return;
     }
 
-    load_assembly_bundles(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides");
-
+    log_info("Loaded managed mod assembly entry point.");
+    
     g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
 }
 

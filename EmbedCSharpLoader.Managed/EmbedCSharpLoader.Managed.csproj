@@ -10,6 +10,7 @@
         <AssemblyVersion>0.0.6.0</AssemblyVersion>
         <DebugType>portable</DebugType>
         <TargetExt>.bin</TargetExt>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     </PropertyGroup>
 
     <ItemGroup>
