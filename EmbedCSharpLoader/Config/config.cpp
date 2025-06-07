@@ -24,7 +24,6 @@ std::string load_param_from_file(const std::filesystem::path& file_path, const s
     else
     {
         log_info(L"File '{}' not found, using defaults", abs_file_path.wstring());
-        log_info(L"Point = ({}, {})", 10, 12);
         param_value = default_param_value;
     }
 

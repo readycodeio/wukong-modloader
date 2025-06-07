@@ -29,11 +29,11 @@ void* get_glib_new0_ptr()
 
         if (g_glib_new0_ptr == nullptr)
         {
-            log_error_missing_ptr("g_new0_ptr");
+            log_error_missing_ptr("glib_new0");
             return nullptr;
         }
 
-        log_debug_ptr("g_new0_ptr", reinterpret_cast<void*>(g_glib_new0_ptr.value()));
+        log_debug_ptr("glib_new0", reinterpret_cast<void*>(g_glib_new0_ptr.value()));
     }
 
     return g_glib_new0_ptr.value();
@@ -45,7 +45,7 @@ void* glib_new0(size_t size)
     auto glib_new0_ptr = reinterpret_cast<void*(*)(size_t)>(get_glib_new0_ptr());;
     if (glib_new0_ptr == nullptr)
     {
-        log_error("Cannot allocate memory using g_new0 because g_new0_ptr is not set.");
+        log_error("Cannot allocate memory using glib_new0 ptr is not set.");
         return nullptr;
     }
     

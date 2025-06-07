@@ -12,6 +12,8 @@
 #include "Config/path.h"
 #include "Mono/image.h"
 #include "Logger/logger.h"
+#include "Memory/common.h"
+#include "Memory/patch.h"
 #include "Memory/scanner.h"
 
 
@@ -20,6 +22,7 @@ typedef void* (*mono_assembly_request_open_t)(const char* filename, const MonoAs
 
 static std::optional<void***> g_bundles_ptr;
 static std::optional<void*> g_mono_assembly_request_open_ptr;
+static std::optional<void*> g_mono_register_bundled_assemblies_ptr;
 
 
 void*** get_bundles_ptr()
@@ -40,19 +43,19 @@ void*** get_bundles_ptr()
             "0f 1f 84 00 00 00 00 00"
         );
         
-        if (bundle_user_ptr == 0)
+        if (!bundle_user_ptr)
         {
-            log_error_missing_ptr("bundle_user_ptr");
+            log_error_missing_ptr("bundles_user_func");
             g_bundles_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("bundle_user_ptr", bundle_user_ptr);
+        log_debug_ptr("bundles_user_func", bundle_user_ptr);
         
         uint32_t bundles_offset = *reinterpret_cast<uint32_t*>(bundle_user_ptr + 3);
         g_bundles_ptr = reinterpret_cast<void***>(bundle_user_ptr + 7 + bundles_offset);
 
-        log_debug_ptr("bundles_ptr", bundles_offset);
+        log_debug_ptr("bundles", bundles_offset);
     }
 
     return g_bundles_ptr.value();
@@ -86,9 +89,84 @@ bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies)
 }
 
 
+void* get_mono_register_bundled_assemblies_ptr()
+{
+    if (!g_mono_register_bundled_assemblies_ptr.has_value())
+    {
+        auto bundles_ptr = reinterpret_cast<uint64_t>(get_bundles_ptr());
+        if (!bundles_ptr)
+        {
+            log_error("Cannot get mono_register_bundled_assemblies_ptr due to missing bundles_ptr.");
+            return nullptr;
+        }
+    
+        uint64_t mono_register_bundled_assemblies_ptr = signature(
+            "48 89 0d "
+            "? ? ? ? "
+            "c3",
+            [&](std::uint8_t* ptr) {
+                uint32_t bundles_offset = bundles_ptr - (reinterpret_cast<uint32_t>(ptr) + 7);
+                return *reinterpret_cast<uint32_t*>(ptr + 3) == bundles_offset;
+            }
+        );
+
+        if (!mono_register_bundled_assemblies_ptr)
+        {
+            log_error_missing_ptr("mono_register_bundled_assemblies");
+            g_mono_register_bundled_assemblies_ptr = nullptr;
+            return nullptr;
+        }
+
+        log_debug_ptr("mono_register_bundled_assemblies", mono_register_bundled_assemblies_ptr);
+        g_mono_register_bundled_assemblies_ptr = reinterpret_cast<void*>(mono_register_bundled_assemblies_ptr);
+    }
+
+    return g_mono_register_bundled_assemblies_ptr.value();
+}
+
+
+extern "C" void*** g_bundles_ptr_exported;
+extern "C" void(* g_register_bundled_assemblies_callback)();
+extern "C" void register_bundled_assemblies_callback_trampoline();
+
+
+bool intercept_register_bundled_assemblies(void(*callback)())
+{
+    auto mono_register_bundled_assemblies_ptr = reinterpret_cast<uint64_t>(get_mono_register_bundled_assemblies_ptr());
+    if (!mono_register_bundled_assemblies_ptr)
+    {
+        log_error("Cannot intercept mono_register_bundled_assemblies due to missing ptr offsets.");
+        return false;
+    }
+
+    uint8_t instr_patch[] = {
+        // MOV RDX
+        0x48, 0xBA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // JMP RDX
+        0x48, 0xFF, 0xE2
+    };
+    // Set the callback address in the patch
+    *reinterpret_cast<void**>(instr_patch + 2) = &register_bundled_assemblies_callback_trampoline;
+
+    g_bundles_ptr_exported = get_bundles_ptr();
+    g_register_bundled_assemblies_callback = callback;
+
+    auto patch_instr_ptr = mono_register_bundled_assemblies_ptr + 0;
+    auto patch_instr_rva = patch_instr_ptr - g_exe_base_address;
+    if (!patch_set_data(g_main_module_name, patch_instr_rva, instr_patch, sizeof(instr_patch)))
+    {
+        log_error("Failed to patch instruction at {:x}", patch_instr_rva);
+        return false;
+    }
+
+    return true;
+}
+
+
 bool load_assembly_bundles(const std::filesystem::path& dir)
 {
     auto full_dir = get_mod_base_path() / dir;
+    log_debug(L"Full dir: {}", full_dir.wstring());
 
     auto old_bundles = get_mono_register_bundled_assemblies();
     std::vector<MonoBundledAssembly*> new_bundles_arr;
@@ -101,6 +179,7 @@ bool load_assembly_bundles(const std::filesystem::path& dir)
     {
         if (it->is_regular_file(ec) && it->path().extension() == ".dll")
         {
+            log_debug(L"Processing: {}", it->path().wstring());
             std::ifstream dll_file(it->path(), std::ios::in | std::ios::binary | std::ios::ate);
             
             if (dll_file)
@@ -177,11 +256,12 @@ void* get_mono_assembly_request_open_ptr()
         
         if (!mono_assembly_request_open)
         {
-            log_error_missing_ptr("mono_assembly_request_open_ptr");
+            log_error_missing_ptr("mono_assembly_request_open");
             g_mono_assembly_request_open_ptr = nullptr;
             return nullptr;
         }
 
+        log_debug_ptr("mono_assembly_request_open", mono_assembly_request_open);
         g_mono_assembly_request_open_ptr = reinterpret_cast<void*>(mono_assembly_request_open);
     }
 

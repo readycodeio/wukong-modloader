@@ -43,16 +43,18 @@ BundledSymfile** get_bundled_symfiles_ptr()
         
         if (!bundled_symfiles_user_func_ptr)
         {
-            log_error_missing_ptr("bundled_symfiles_user_func_ptr");
+            log_error_missing_ptr("bundled_symfiles_user_func");
             g_bundled_symfiles_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("bundled_symfiles_user_func_ptr", bundled_symfiles_user_func_ptr);
+        log_debug_ptr("bundled_symfiles_user_func", bundled_symfiles_user_func_ptr);
         
         uint32_t bundled_symfiles_offset = *reinterpret_cast<uint32_t*>(bundled_symfiles_user_func_ptr + 11);
         uint64_t instr_base = bundled_symfiles_user_func_ptr + 15;
         g_bundled_symfiles_ptr = reinterpret_cast<BundledSymfile**>(instr_base + bundled_symfiles_offset);
+        
+        log_debug_ptr("bundled_symfiles", bundled_symfiles_user_func_ptr);
     }
 
     return g_bundled_symfiles_ptr.value();
@@ -96,12 +98,12 @@ void* get_mono_debug_init_ptr()
 
         if (!debug_init_func_ptr)
         {
-            log_error_missing_ptr("debug_init_func_ptr");
+            log_error_missing_ptr("debug_init");
             g_mono_debug_init_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("debug_init_func_ptr", debug_init_func_ptr);
+        log_debug_ptr("debug_init", debug_init_func_ptr);
         g_mono_debug_init_ptr = reinterpret_cast<void*>(debug_init_func_ptr);
     }
 

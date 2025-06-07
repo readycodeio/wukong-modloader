@@ -5,7 +5,7 @@ $zipName = "Loader"
 
 # Define the source and destination directories
 $nativeSourceDir = "x64/$Configuration"
-$managedSourceDir = "EmbedCSharpLoader.Managed/bin/$Configuration/net472"
+$managedSourceDir = "EmbedCSharpLoader.Managed/bin/$Configuration/net472/win-x64"
 $pakSourceDir = "PakFiles"
 
 $nativeDestDir = "Binaries/Win64"

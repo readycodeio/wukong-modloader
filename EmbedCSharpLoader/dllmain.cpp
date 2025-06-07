@@ -72,15 +72,6 @@ static void post_runtime_load_callback()
 
     log_info("Domain initialized");
 
-    if (load_assembly_bundles(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides"))
-    {
-        log_info("Loaded assembly bundle overrides.");
-    }
-    else
-    {
-        log_error("Failed to load assembly bundle overrides.");
-    }
-    
     g_assembly = mono_assembly_request_open(std::filesystem::path(L"CSharpLoader") / L"EmbedCSharpLoader.Managed.bin");
     if (!g_assembly)
     {
@@ -91,6 +82,21 @@ static void post_runtime_load_callback()
     log_info("Loaded managed mod assembly entry point.");
     
     g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
+}
+
+
+static void post_load_assembly_bundles()
+{
+    log_debug("Assembly bundles callback triggered.");
+    
+    if (load_assembly_bundles(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides"))
+    {
+        log_info("Loaded assembly bundle overrides.");
+    }
+    else
+    {
+        log_error("Failed to load assembly bundle overrides.");
+    }
 }
 
 
@@ -108,10 +114,16 @@ static bool init_embed_runtime()
     auto enable_develop_flag = load_enable_develop();
 
     log_info("Intercepting USharp init.");
-    if (!intercept_usharp_init(&post_runtime_load_callback))
+    if (!intercept_csharp_loader__load_runtime(&post_runtime_load_callback))
     {
         log_error("Failed to intercept USharp init.");
         return false;
+    }
+
+    log_info("Intercepting register bundled.");
+    if (!intercept_register_bundled_assemblies(&post_load_assembly_bundles))
+    {
+        log_error("Failed to intercept register bundled assemblies.");
     }
     
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);

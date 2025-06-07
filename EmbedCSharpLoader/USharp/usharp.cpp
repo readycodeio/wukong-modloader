@@ -28,12 +28,12 @@ int32_t* get_usharp_use_system_env_var_switch_ptr()
 
         if (!usharp_enable_hookenv_ptr)
         {
-            log_error_missing_ptr("usharp_enable_hookenv_ptr");
+            log_error_missing_ptr("usharp_enable_hookenv");
             g_usharp_use_system_env_var_switch_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("usharp_enable_hookenv_ptr", usharp_enable_hookenv_ptr);
+        log_debug_ptr("usharp_enable_hookenv", usharp_enable_hookenv_ptr);
         
         uint64_t usharp_enable_user_func_ptr = signature(
             "48 83 EC 38 "
@@ -48,8 +48,6 @@ int32_t* get_usharp_use_system_env_var_switch_ptr()
             "48 83 C4 38 "
             "C3",
             [&](std::uint8_t* ptr) {
-                if (usharp_enable_hookenv_ptr == 0)
-                    return false;
                 uint32_t usharp_enable_hookenv_offset = usharp_enable_hookenv_ptr - (reinterpret_cast<uint32_t>(ptr) + 19);
                 return *(uint32_t*)(ptr + 15) == usharp_enable_hookenv_offset;
             }
@@ -57,17 +55,17 @@ int32_t* get_usharp_use_system_env_var_switch_ptr()
 
         if (!usharp_enable_user_func_ptr)
         {
-            log_error_missing_ptr("usharp_enable_user_func_ptr");
+            log_error_missing_ptr("usharp_enable_user_func");
             g_usharp_use_system_env_var_switch_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("usharp_enable_user_func_ptr", usharp_enable_user_func_ptr);
+        log_debug_ptr("usharp_enable_user_func", usharp_enable_user_func_ptr);
         
         uint32_t use_system_env_var_switch_offset = *reinterpret_cast<uint32_t*>(usharp_enable_user_func_ptr + 22);
         g_usharp_use_system_env_var_switch_ptr = reinterpret_cast<int32_t*>((usharp_enable_user_func_ptr + 26) + use_system_env_var_switch_offset);
 
-        log_debug_ptr("g_usharp_use_system_env_var_switch_ptr", g_usharp_use_system_env_var_switch_ptr.value());
+        log_debug_ptr("usharp_use_system_env_var_switch", g_usharp_use_system_env_var_switch_ptr.value());
     }
 
     return g_usharp_use_system_env_var_switch_ptr.value();
@@ -109,7 +107,7 @@ void* get_mono_sbd_env_options_ptr()
         uint32_t mono_sbd_env_options_offset = *reinterpret_cast<uint32_t*>(reinterpret_cast<uint64_t>(mini_init_ptr) + 47);
         g_mono_sbd_env_options_ptr = reinterpret_cast<void*>((reinterpret_cast<uint64_t>(mini_init_ptr) + 51) + mono_sbd_env_options_offset);
 
-        log_debug_ptr("g_mono_sbd_env_options_ptr", g_mono_sbd_env_options_ptr.value());
+        log_debug_ptr("mono_sbd_env_options", g_mono_sbd_env_options_ptr.value());
     }
 
     return g_mono_sbd_env_options_ptr.value();
@@ -174,13 +172,13 @@ bool init_debugger(const std::string& log_level, const std::string& log_mask, co
 }
 
 
-extern "C" void(* g_pending_trampoline_callback)();
-extern "C" void callback_trampoline();
+extern "C" void(* g_csharp_loader__load_runtime_callback)();
+extern "C" void csharp_loader__load_runtime_callback_trampoline();
 
 
-bool intercept_usharp_init(void(*callback)())
+bool intercept_csharp_loader__load_runtime(void(*callback)())
 {
-    uint64_t csharp_loader__load_runtime__epilog = signature(
+    uint64_t csharp_loader__load_runtime__epilog_ptr = signature(
         "8b 03 "
         "c1 e8 03 "
         "a8 01 "
@@ -196,26 +194,26 @@ bool intercept_usharp_init(void(*callback)())
         "c3"
     );
     
-    if (!csharp_loader__load_runtime__epilog)
+    if (!csharp_loader__load_runtime__epilog_ptr)
     {
         log_error_missing_ptr("csharp_loader__load_runtime__suffix");
         return false;
     }
 
-    log_debug_ptr("csharp_loader__load_runtime__suffix", csharp_loader__load_runtime__epilog);
+    log_debug_ptr("csharp_loader__load_runtime__suffix", csharp_loader__load_runtime__epilog_ptr);
 
-    BYTE instr_patch[] = {
+    uint8_t instr_patch[] = {
         // MOV RCX, <callback_trampoline>
         0x48, 0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // JMP RCX
         0xFF, 0xE1
     };
     // Set the callback address in the patch
-    *reinterpret_cast<void**>(instr_patch + 2) = &callback_trampoline;
+    *reinterpret_cast<void**>(instr_patch + 2) = &csharp_loader__load_runtime_callback_trampoline;
 
-    g_pending_trampoline_callback = callback;
+    g_csharp_loader__load_runtime_callback = callback;
 
-    auto patch_instr_ptr= csharp_loader__load_runtime__epilog + 25;
+    auto patch_instr_ptr= csharp_loader__load_runtime__epilog_ptr + 25;
     auto patch_instr_rva = patch_instr_ptr - g_exe_base_address;
     if (!patch_set_data(g_main_module_name, patch_instr_rva, instr_patch, sizeof(instr_patch)))
     {

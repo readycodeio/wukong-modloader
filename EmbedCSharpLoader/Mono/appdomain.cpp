@@ -26,12 +26,12 @@ void** get_mono_get_root_domain_ptr()
         
         if (!domain_user_func_ptr)
         {
-            log_error_missing_ptr("domain_user_func_ptr");    
+            log_error_missing_ptr("domain_user_func");    
             g_domain_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("domain_user_func_ptr", domain_user_func_ptr);
+        log_debug_ptr("domain_user_func", domain_user_func_ptr);
 
         auto domain_offset = *reinterpret_cast<int*>(domain_user_func_ptr + 10);
         g_domain_ptr = reinterpret_cast<void**>(domain_user_func_ptr + 10 + domain_offset + 4);

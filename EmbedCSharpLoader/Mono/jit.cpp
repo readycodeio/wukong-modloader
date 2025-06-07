@@ -19,12 +19,12 @@ void* get_memory_func_ptr()
         
         if (!memory_function_ptr)
         {
-            log_error_missing_ptr("memory_function_ptr");
+            log_error_missing_ptr("memory_func");
             g_memory_func_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("memory_function_ptr", memory_function_ptr);
+        log_debug_ptr("memory_func", memory_function_ptr);
         g_memory_func_ptr = reinterpret_cast<void*>(memory_function_ptr);
     }
     

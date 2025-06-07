@@ -223,7 +223,19 @@
     <ClInclude Include="Windows\console.h" />
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="USharp\usharp_load_runtime_trampoline.asm" />
+    <MASM Include="Mono\assembly_register_bundled_assemblies.asm">
+      <NoLogo>true</NoLogo>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ObjectFileName>x64\Debug\%(FileName).obj</ObjectFileName>
+      <PreserveIdentifierCase>0</PreserveIdentifierCase>
+      <WarningLevel>3</WarningLevel>
+      <PackAlignmentBoundary>0</PackAlignmentBoundary>
+      <CallingConvention>0</CallingConvention>
+      <ErrorReporting>0</ErrorReporting>
+      <CommandLineTemplate>ml64.exe /c [AllOptions] [AdditionalOptions] /Ta[Inputs]</CommandLineTemplate>
+      <ExecutionDescription>Assembling %(Identity)...</ExecutionDescription>
+    </MASM>
+    <MASM Include="USharp\csharp_loader__load_runtime.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

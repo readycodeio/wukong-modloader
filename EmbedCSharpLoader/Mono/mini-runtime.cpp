@@ -35,12 +35,12 @@ void* get_mini_init_ptr()
 
         if (mini_init_ptr == 0)
         {
-            log_error_missing_ptr("mini_init_ptr");
+            log_error_missing_ptr("mini_init");
             g_mini_init_ptr = nullptr;
             return nullptr;
         }
 
-        log_debug_ptr("mini_init_ptr", mini_init_ptr);
+        log_debug_ptr("mini_init", mini_init_ptr);
         g_mini_init_ptr = reinterpret_cast<void*>(mini_init_ptr);
     }
 
