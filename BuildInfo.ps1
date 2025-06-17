@@ -28,8 +28,7 @@ $managedFiles = @(
     "Mono.Cecil.Pdb.dll", 
     "Mono.Cecil.Rocks.dll",
     "SharpDX.dll", 
-    "SharpDX.XInput.dll",
-    "System.Runtime.CompilerServices.Unsafe.dll"
+    "SharpDX.XInput.dll"
 )
 $pakFiles = @(
     "ScreenshotSaverMod.pak", 

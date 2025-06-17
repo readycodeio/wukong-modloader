@@ -3,6 +3,7 @@
 
 #include "Config/debugger.h"
 #include "Config/flags.h"
+#include "Config/path.h"
 #include "EntryDll/version_dll.h"
 #include "Logger/logger.h"
 #include "Mono/appdomain.h"
@@ -100,6 +101,54 @@ static void post_load_assembly_bundles()
 }
 
 
+static std::wstring get_version_string()
+{
+    auto dll_path = get_mod_base_path() / L"CSharpLoader" / L"EmbedCSharpLoader.Managed.bin";
+    
+    DWORD handle = 0;
+    DWORD size = GetFileVersionInfoSizeW(dll_path.c_str(), &handle);
+
+    std::vector<BYTE> version_data(size);
+    VS_FIXEDFILEINFO* file_info = nullptr;
+    UINT len = 0;
+
+    if (size == 0)
+        goto unknown;
+
+    if (!GetFileVersionInfoW(dll_path.c_str(), handle, size, version_data.data()))
+        goto unknown;
+
+    if (!VerQueryValueW(version_data.data(), L"\\", reinterpret_cast<LPVOID*>(&file_info), &len))
+        goto unknown;
+
+    if (file_info)
+    {
+        auto major = HIWORD(file_info->dwFileVersionMS);
+        auto minor = LOWORD(file_info->dwFileVersionMS);
+        auto build = HIWORD(file_info->dwFileVersionLS);
+        auto revision = LOWORD(file_info->dwFileVersionLS);
+        return std::format(L"{}.{}.{}.{}", major, minor, build, revision);
+    }
+
+unknown:
+    log_error(L"Mod loader version could not be determined: {}", dll_path.wstring());
+    return L"Unknown Version";
+}
+
+
+static std::wstring get_title_string()
+{
+    return LR"(
+ ____                _       __  __   _                    _           
+|  _ \ ___  __ _  __| |_   _|  \/  | | |    ___   __ _  __| | ___ _ __ 
+| |_) / _ \/ _` |/ _` | | | | |\/| | | |   / _ \ / _` |/ _` |/ _ \ '__|
+|  _ <  __/ (_| | (_| | |_| | |  | | | |__| (_) | (_| | (_| |  __/ |   
+|_| \_\___|\__,_|\__,_|\__, |_|  |_| |_____\___/ \__,_|\__,_|\___|_|   
+                       |___/                                          
+)";
+}
+
+
 static bool init_embed_runtime()
 {
     auto enable_console_flag = load_enable_console();
@@ -107,7 +156,7 @@ static bool init_embed_runtime()
     if (enable_console_flag == 1)
     {
         create_console();
-        log_info(L"CSharp Embed Loader: v0.1");
+        log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
     
     auto enable_jit_flag = load_enable_jit();

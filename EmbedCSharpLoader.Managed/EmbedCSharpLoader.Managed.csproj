@@ -13,6 +13,20 @@
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <BuildValue>$([System.DateTime]::op_Subtraction($([System.DateTime]::UtcNow), $([System.DateTime]::Parse('2024-12-17'))).Days)</BuildValue>
+        <RevisionValue>$([System.DateTime]::UtcNow.ToString("HHmm"))</RevisionValue>
+        <BuildTimestamp>$(BuildValue).$(RevisionValue)</BuildTimestamp>
+        <FileVersion>0.7.$(BuildTimestamp)</FileVersion>
+        <Version>0.7.$(BuildTimestamp)</Version>
+        <InformationalVersion>0.7.$(BuildTimestamp)</InformationalVersion>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    </PropertyGroup>
+    
+    <Target Name="PrintBuildVersion" AfterTargets="AfterBuild">
+        <Message Importance="High" Text="Build Version: $(InformationalVersion)" />
+    </Target>
+
     <ItemGroup>
       <ProjectReference Include="..\CSharpModBase\CSharpModBase.csproj" />
     </ItemGroup>
