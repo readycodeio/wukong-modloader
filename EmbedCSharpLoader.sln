@@ -1,10 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EmbedCSharpLoader", "EmbedCSharpLoader\EmbedCSharpLoader.vcxproj", "{A12CECEB-428F-4712-A1BC-EBD9D703A056}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadyM.Loader.Wukong", "ReadyM.Loader.Wukong\ReadyM.Loader.Wukong.vcxproj", "{A12CECEB-428F-4712-A1BC-EBD9D703A056}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmbedCSharpLoader.Managed", "EmbedCSharpLoader.Managed\EmbedCSharpLoader.Managed.csproj", "{92DC2206-C47F-45E8-AF2A-AD4F4971377C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadyM.Loader.Wukong.Managed", "ReadyM.Loader.Wukong.Managed\ReadyM.Loader.Wukong.Managed.csproj", "{92DC2206-C47F-45E8-AF2A-AD4F4971377C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpModBase", "CSharpModBase\CSharpModBase.csproj", "{66D1C8B6-5C1C-4CFE-AD93-D13851404EB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadyM.Loader.Wukong.Bootstrap", "ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj", "{2C4D4996-ABFD-4083-9E65-BB162096FEBE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,5 +40,13 @@ Global
 		{66D1C8B6-5C1C-4CFE-AD93-D13851404EB4}.Release|Win32.Build.0 = Release|Any CPU
 		{66D1C8B6-5C1C-4CFE-AD93-D13851404EB4}.Release|x64.ActiveCfg = Release|Any CPU
 		{66D1C8B6-5C1C-4CFE-AD93-D13851404EB4}.Release|x64.Build.0 = Release|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Debug|Win32.Build.0 = Debug|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|Win32.ActiveCfg = Release|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|Win32.Build.0 = Release|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

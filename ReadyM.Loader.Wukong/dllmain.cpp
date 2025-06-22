@@ -1,0 +1,326 @@
+#include <iterator>
+#include <windows.h>
+
+#include "Config/debugger.h"
+#include "Config/flags.h"
+#include "Config/path.h"
+#include "EntryDll/version_dll.h"
+#include "Logger/logger.h"
+#include "Mono/appdomain.h"
+#include "Mono/assembly.h"
+#include "Mono/debug-helpers.h"
+#include "Mono/jit.h"
+#include "Mono/mono-debug.h"
+#include "Mono/object-internals.h"
+#include "USharp/usharp.h"
+#include "Windows/console.h"
+
+
+static void* g_domain;
+static MonoAssembly* g_assembly;
+
+
+constexpr const char* k_entry_point_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Init";
+
+
+static bool init_managed_mod_loader()
+{
+    auto image = mono_assembly_get_image(g_assembly);
+
+    if (!image)
+    {
+        log_error("mono_assembly_get_image failed.");
+        return false;
+    }
+    
+    auto method_desc = mono_method_desc_new(k_entry_point_method, true);
+
+    if (!method_desc)
+    {
+        log_error("Invalid method descriptor: mono_method_desc_new failed.");
+        return false;
+    }
+    
+    auto method = mono_method_desc_search_in_image(method_desc, image);
+
+    if (!method)
+    {
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed.", k_entry_point_method);
+        mono_method_desc_free(method_desc);
+        return false;
+    }
+    
+    mono_method_desc_free(method_desc);
+
+    MonoException* exc = nullptr;
+    MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
+    mono_runtime_invoke(method, nullptr, nullptr, exc_obj);
+
+    if (exc != nullptr)
+    {
+        log_error("mono_runtime_invoke failed with exception");
+        return false;
+    }
+    
+    log_debug("CSharpLoader init success.");
+    return true;
+}
+
+
+static HANDLE g_main_background_thread = nullptr;
+static HMODULE g_hModule = nullptr;
+
+
+static DWORD wait_and_exit(DWORD code)
+{
+    log_error("Exiting with code: {}", code);
+    Sleep(10000);
+    return code;
+}
+
+
+DWORD WINAPI mod_background_thread(LPVOID dwModule)
+{
+    if (!init_managed_mod_loader())
+    {
+        return wait_and_exit(EXIT_FAILURE);
+    }
+    
+    return EXIT_SUCCESS;
+}
+
+
+/*
+static void post_csharp_loader__load_runtimes__callback()
+{
+    g_domain = mono_get_root_domain();
+    if (!g_domain)
+    {
+        log_error("mono_get_root_domain returned null.");
+        return;
+    }
+
+    log_info("Domain initialized");
+
+    g_assembly = mono_domain_assembly_open(g_domain, "ReadyM.Loader.Wukong.Bootstrap.dll");
+    if (!g_assembly)
+    {
+        log_error("mono_domain_assembly_open failed.");
+        return;
+    }
+
+    log_info("Loaded managed mod assembly entry point.");
+
+#ifdef LOAD_THREADED
+    g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
+#else
+    if (!init_managed_mod_loader())
+    {
+        log_error("init_managed_mod_loader failed.");
+        return;
+    }
+#endif
+
+    log_debug("post_csharp_loader__load_runtimes__callback completed successfully.");
+}
+*/
+
+
+static void post_csharp_loader__load__callback()
+{
+    g_domain = mono_get_root_domain();
+    if (!g_domain)
+    {
+        log_error("mono_get_root_domain returned null.");
+        return;
+    }
+
+    log_info("Domain initialized");
+
+    g_assembly = mono_domain_assembly_open(g_domain, "ReadyM.Loader.Wukong.Bootstrap.dll");
+    if (!g_assembly)
+    {
+        log_error("mono_domain_assembly_open failed.");
+        return;
+    }
+
+    log_info("Loaded managed mod assembly entry point.");
+
+#ifdef LOAD_THREADED
+    g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
+#else
+    if (!init_managed_mod_loader())
+    {
+        log_error("init_managed_mod_loader failed.");
+        return;
+    }
+#endif
+
+    log_debug("post_csharp_loader__load__callback completed successfully.");
+}
+
+
+static void post_load_assembly_bundles()
+{
+    log_debug("Assembly bundles callback triggered.");
+
+    auto dirs = std::vector
+    {
+        std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides",
+        std::filesystem::path(L"CSharpLoader") / "ReadyM.Loader.Wukong.Bootstrap.dll"
+    };
+    
+    if (load_assembly_bundles(dirs))
+    {
+        log_info("Loaded assembly bundle overrides.");
+    }
+    else
+    {
+        log_error("Failed to load assembly bundle overrides.");
+    }
+}
+
+
+static std::wstring get_version_string()
+{
+    auto dll_path = get_mod_base_path() / L"CSharpLoader" / L"ReadyM.Loader.Wukong.Managed.dll";
+    
+    DWORD handle = 0;
+    DWORD size = GetFileVersionInfoSizeW(dll_path.c_str(), &handle);
+
+    std::vector<BYTE> version_data(size);
+    VS_FIXEDFILEINFO* file_info = nullptr;
+    UINT len = 0;
+
+    if (size == 0)
+        goto unknown;
+
+    if (!GetFileVersionInfoW(dll_path.c_str(), handle, size, version_data.data()))
+        goto unknown;
+
+    if (!VerQueryValueW(version_data.data(), L"\\", reinterpret_cast<LPVOID*>(&file_info), &len))
+        goto unknown;
+
+    if (file_info)
+    {
+        auto major = HIWORD(file_info->dwFileVersionMS);
+        auto minor = LOWORD(file_info->dwFileVersionMS);
+        auto build = HIWORD(file_info->dwFileVersionLS);
+        auto revision = LOWORD(file_info->dwFileVersionLS);
+        return std::format(L"{}.{}.{}.{}", major, minor, build, revision);
+    }
+
+unknown:
+    log_error(L"Mod loader version could not be determined: {}", dll_path.wstring());
+    return L"Unknown Version";
+}
+
+
+static std::wstring get_title_string()
+{
+    return LR"(
+ ____                _       __  __   _                    _           
+|  _ \ ___  __ _  __| |_   _|  \/  | | |    ___   __ _  __| | ___ _ __ 
+| |_) / _ \/ _` |/ _` | | | | |\/| | | |   / _ \ / _` |/ _` |/ _ \ '__|
+|  _ <  __/ (_| | (_| | |_| | |  | | | |__| (_) | (_| | (_| |  __/ |   
+|_| \_\___|\__,_|\__,_|\__, |_|  |_| |_____\___/ \__,_|\__,_|\___|_|   
+                       |___/                                          
+)";
+}
+
+
+static bool init_embed_runtime()
+{
+    auto enable_console_flag = load_enable_console();
+
+    if (enable_console_flag == 1)
+    {
+        create_console();
+        log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
+    }
+    
+    auto enable_jit_flag = load_enable_jit();
+    auto enable_develop_flag = load_enable_develop();
+
+    log_info("Intercepting USharp init.");
+    if (!intercept_csharp_loader__load(&post_csharp_loader__load__callback))    
+    {
+        log_error("Failed to intercept USharp init.");
+        return false;
+    }
+
+    log_info("Intercepting register bundled.");
+    if (!intercept_register_bundled_assemblies(&post_load_assembly_bundles))
+    {
+        log_error("Failed to intercept register bundled assemblies.");
+    }
+    
+    log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
+    if (enable_develop_flag)
+    {
+        if (!load_debugger_symbols(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"ReflectionOnly"))
+        {
+            log_error("Failed to load debugger symbols.");
+            // NOTE: non-fatal error
+        }
+
+        auto log_level = load_log_level();
+        auto log_mask = load_log_mask();
+        auto debugger_agent_opts = load_debugger_agent_opts();
+        if (!init_debugger(log_level, log_mask, debugger_agent_opts))
+        {
+            log_error("Failed to initialize debugger.");
+            // NOTE: non-fatal error
+        }
+    }
+
+    log_info("CSharpLoader EnableJit flag: {}", enable_jit_flag);
+    if (enable_jit_flag)
+    {
+        if (!enable_jit())
+        {
+            log_error("Failed to enable JIT.");
+            // NOTE: non-fatal error
+        }
+    }
+
+    return true;
+}
+
+
+static void init_dll(HMODULE hModule)
+{
+    DisableThreadLibraryCalls(hModule);
+    g_hModule = hModule;
+    
+    init_version_dll();
+    init_embed_runtime();
+}
+
+
+static void deinit_dll()
+{
+    if (g_main_background_thread != nullptr)
+        TerminateThread(g_main_background_thread, 0);
+    
+    deinit_version_dll();
+}
+
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        init_dll(hModule);
+        break;
+    case DLL_PROCESS_DETACH:
+        deinit_dll();
+        break;
+    default:
+        // no-op
+        break;
+    }
+	
+    return TRUE;
+}

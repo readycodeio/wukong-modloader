@@ -85,14 +85,5 @@
 *.dll	filter=lfs diff=lfs merge=lfs -text
 *.DLL	filter=lfs diff=lfs merge=lfs -text
 *.nupkg	filter=lfs diff=lfs merge=lfs -text
-*SoldierClipRegistry.asset filter=lfs diff=lfs merge=lfs -text
-*BurstJobSettings.asset filter=lfs diff=lfs merge=lfs -text
 *.lfs.* filter=lfs diff=lfs merge=lfs -text
 *_lfs.* filter=lfs diff=lfs merge=lfs -text
-MonoEmbedRuntime/bin/* fitler=lfs diff=lfs merge=lfs -text
-MonoEmbedRuntime/bin_llvm/* fitler=lfs diff=lfs merge=lfs -text
-MonoEmbedRuntime/lib/* fitler=lfs diff=lfs merge=lfs -text
-Assets/AssetBundles/* filter=lfs diff=lfs merge=lfs -text
-Assets/StreamingAssets/AssetBundles/* filter=lfs diff=lfs merge=lfs -text
-Assets/TotallyTank/Scenes/Tests/UtilityIntelligence/AttackDefendDemo/AttackDefend/AttackDefend.asset filter=lfs diff=lfs merge=lfs -text
-Assets/Audio[[:space:]]Surface[[:space:]]Test/Audio[[:space:]]Surface[[:space:]]Test.asset filter=lfs diff=lfs merge=lfs -text

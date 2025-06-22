@@ -5,10 +5,12 @@ $zipName = "Loader"
 
 # Define the source and destination directories
 $nativeSourceDir = "x64/$Configuration"
-$managedSourceDir = "EmbedCSharpLoader.Managed/bin/$Configuration/net472/win-x64"
+$bootstrapSourceDir = "ReadyM.Loader.Wukong.Bootstrap/bin/$Configuration/net472/win-x64"
+$managedSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/net472/win-x64"
 $pakSourceDir = "PakFiles"
 
 $nativeDestDir = "Binaries/Win64"
+$bootstrapDestDir = "Binaries/Win64/CSharpLoader"
 $managedDestDir = "Binaries/Win64/CSharpLoader"
 $pakDestDir = "Content/Paks/LogicMods"
 
@@ -17,10 +19,15 @@ $nativeFiles = @(
     "version.dll",
     "version.pdb"
 )
+$bootstrapFiles = @(
+    "ReadyM.Loader.Wukong.Bootstrap.dll",
+    "ReadyM.Loader.Wukong.Bootstrap.pdb"
+)
 $managedFiles = @(
     "0Harmony.dll",
-    "EmbedCSharpLoader.Managed.bin",
-    "EmbedCSharpLoader.Managed.pdb",
+    "ReadyM.Loader.Wukong.Managed.dll",
+    "ReadyM.Loader.Wukong.Managed.pdb",
+    "INIFileParser.dll",
     "CSharpModBase.dll",
     "CSharpModBase.pdb",
     "Mono.Cecil.dll",
@@ -37,6 +44,7 @@ $pakFiles = @(
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
+    @($bootstrapFiles, $bootstrapSourceDir, $bootstrapDestDir),
     @($managedFiles, $managedSourceDir, $managedDestDir),
     @($pakFiles, $pakSourceDir, $pakDestDir)
 )

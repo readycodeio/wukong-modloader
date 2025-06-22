@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <LangVersion>latest</LangVersion>
+        <DebugType>portable</DebugType>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <RootNamespace>EmbedCSharpLoader.Managed</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <BuildValue>$([System.DateTime]::op_Subtraction($([System.DateTime]::UtcNow), $([System.DateTime]::Parse('2024-12-17'))).Days)</BuildValue>
+        <RevisionValue>$([System.DateTime]::UtcNow.ToString("HHmm"))</RevisionValue>
+        <BuildTimestamp>$(BuildValue).$(RevisionValue)</BuildTimestamp>
+        <FileVersion>0.7.$(BuildTimestamp)</FileVersion>
+        <Version>0.7.$(BuildTimestamp)</Version>
+        <InformationalVersion>0.7.$(BuildTimestamp)</InformationalVersion>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    </PropertyGroup>
+    
+    <Target Name="PrintBuildVersion" AfterTargets="AfterBuild">
+        <Message Importance="High" Text="Build Version: $(InformationalVersion)" />
+    </Target>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CSharpModBase\CSharpModBase.csproj" />
+      <ProjectReference Include="..\ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ini-parser" Version="2.5.2" />
+        <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="UnrealEngine">
+            <HintPath>..\GameDll\UnrealEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnrealEngine.Runtime">
+            <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+</Project>

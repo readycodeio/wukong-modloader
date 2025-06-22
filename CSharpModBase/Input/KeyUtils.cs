@@ -5,11 +5,6 @@ namespace CSharpModBase.Input;
 
 public static class KeyUtils
 {
-    /// <summary>
-    /// Keys转字符串，支持组合键
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
     public static string KeyToString(ModifierKeys modifiers, Key key, List<string> buf)
     {
         if (modifiers.HasFlag(ModifierKeys.Control)) buf.Add("Ctrl");
