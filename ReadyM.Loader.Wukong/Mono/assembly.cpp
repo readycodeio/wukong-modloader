@@ -129,7 +129,7 @@ void* get_mono_register_bundled_assemblies_ptr()
 
 
 extern "C" void*** g_bundles_ptr_exported;
-extern "C" void(* __cdecl g_bundled_assemblies_callback)();
+extern "C" void(*g_bundled_assemblies_callback)();
 extern "C" void bundled_assemblies_callback_trampoline();
 
 

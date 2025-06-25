@@ -172,7 +172,7 @@ bool init_debugger(const std::string& log_level, const std::string& log_mask, co
 }
 
 
-extern "C" void(* __cdecl g_csharp_loader__load_runtime__callback)();
+extern "C" void(*g_csharp_loader__load_runtime__callback)();
 extern "C" void csharp_loader__load_runtime__callback_trampoline();
 
 
@@ -225,7 +225,7 @@ bool intercept_csharp_loader__load_runtimes(void(*callback)())
 }
 
 
-extern "C" void(* __cdecl g_csharp_loader__load__callback)();
+extern "C" void(*g_csharp_loader__load__callback)();
 extern "C" void csharp_loader__load__callback_trampoline();
 
 

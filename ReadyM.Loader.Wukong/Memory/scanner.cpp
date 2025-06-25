@@ -134,12 +134,17 @@ uint64_t signature_impl(const char* module_data, size_t module_size, const std::
     auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     if (result != 0)
     {
-        log_debug("Signature found at {:x} in {:d} ms (Scan speed: {:f} GB/s)", result, duration_ms,
+        log_debug("Signature found at 0x{:x} in {:d} ms (Scanned {:.1f} MB, scan speed: {:.3f} GB/s)",
+                  result,
+                  duration_ms,
+                  static_cast<double>(result - reinterpret_cast<uint64_t>(module_data)) / (1024 * 1024),
                   static_cast<double>(result - reinterpret_cast<uint64_t>(module_data)) / (1024 * 1024 * 1024) / (static_cast<double>(duration_ms) / 1000.0));
     }
     else
     {
-        log_debug("Signature not found in {:d} ms (Scan speed: {:f} GB/s)", duration_ms, 
+        log_debug("Signature not found in {:d} ms (Scanned {:.1f} MB, scan speed: {:.3f} GB/s)",
+                  duration_ms,
+                  static_cast<double>(module_size) / (1024 * 1024),
                   static_cast<double>(module_size) / (1024 * 1024 * 1024) / (static_cast<double>(duration_ms) / 1000.0));
     }
     
