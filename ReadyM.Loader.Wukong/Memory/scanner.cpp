@@ -85,11 +85,12 @@ uint64_t signature_impl(const char* module_data, size_t module_size, const std::
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
+    auto first_subpattern_data = reinterpret_cast<const char*>(pattern_items[0].subpattern.data());
+    auto first_subpattern_size = pattern_items[0].subpattern.size();
+    auto first_subpattern_offset = pattern_items[0].offset;
+    
     while (offset < module_size - pattern_size)
     {
-        auto first_subpattern_data = reinterpret_cast<const char*>(pattern_items[0].subpattern.data());
-        auto first_subpattern_size = pattern_items[0].subpattern.size();
-        auto first_subpattern_offset = pattern_items[0].offset;
         auto candidate = sz_find(module_data + offset + first_subpattern_offset, module_size - offset - first_subpattern_offset, first_subpattern_data, first_subpattern_size);
 
         if (candidate == nullptr)
@@ -104,7 +105,7 @@ uint64_t signature_impl(const char* module_data, size_t module_size, const std::
             auto subpattern_size = item.subpattern.size();
             auto subpattern_offset = item.offset;
 
-            if (!sz_equal(candidate + subpattern_offset, subpattern_data, subpattern_size))
+            if (!sz_equal(candidate + subpattern_offset - first_subpattern_offset, subpattern_data, subpattern_size))
             {
                 matches_all = false;
                 break;
