@@ -1,0 +1,13 @@
+<Project>
+    <PropertyGroup>
+        <!-- Number of days since Dec 17, 2024 -->
+        <BuildValue>$([System.DateTime]::op_Subtraction($([System.DateTime]::UtcNow), $([System.DateTime]::Parse('2024-12-17'))).Days)</BuildValue>
+        <!-- Hours and minutes as a four-digit number -->
+        <RevisionValue>$([System.DateTime]::UtcNow.ToString('HHmm'))</RevisionValue>
+        <BuildTimestamp>$(BuildValue).$(RevisionValue)</BuildTimestamp>
+        <FileVersion>0.7.$(BuildTimestamp)</FileVersion>
+        <Version>0.7.$(BuildTimestamp)</Version>
+        <InformationalVersion>0.7.$(BuildTimestamp)</InformationalVersion>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    </PropertyGroup>
+</Project>
