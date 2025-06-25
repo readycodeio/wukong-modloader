@@ -4,7 +4,4 @@ public interface ICSharpModEx : ICSharpMod
 {
     object? GetReloadContext();
     void Reload(object? context);
-
-    void Patch();
-    void Unpatch();
 }

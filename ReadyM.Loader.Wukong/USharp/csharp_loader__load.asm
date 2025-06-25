@@ -11,17 +11,17 @@ csharp_loader__load__callback_trampoline:
 
 ; --- save original return value (in RAX) ---
 push    rax
-sub     rsp, 8h
+sub     rsp, 28h
 
 ; --- call user callback ---
 mov     rax, g_csharp_loader__load__callback ; load pointer
 call    rax                                  ; invoke it
 
 ; --- restore original return value ---
-add     rsp, 8h
+add     rsp, 28h
 pop     rax
 
-; --- original epilogue you replaced ---
+; --- the original replaced epilogue ---
 add     rsp, 5e8h
 pop     r15
 pop     r14

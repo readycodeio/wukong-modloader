@@ -129,8 +129,8 @@ void* get_mono_register_bundled_assemblies_ptr()
 
 
 extern "C" void*** g_bundles_ptr_exported;
-extern "C" void(* g_register_bundled_assemblies_callback)();
-extern "C" void register_bundled_assemblies_callback_trampoline();
+extern "C" void(* __cdecl g_bundled_assemblies_callback)();
+extern "C" void bundled_assemblies_callback_trampoline();
 
 
 bool intercept_register_bundled_assemblies(void(*callback)())
@@ -149,10 +149,10 @@ bool intercept_register_bundled_assemblies(void(*callback)())
         0x48, 0xFF, 0xE2
     };
     // Set the callback address in the patch
-    *reinterpret_cast<void**>(instr_patch + 2) = &register_bundled_assemblies_callback_trampoline;
+    *reinterpret_cast<void**>(instr_patch + 2) = &bundled_assemblies_callback_trampoline;
 
     g_bundles_ptr_exported = get_bundles_ptr();
-    g_register_bundled_assemblies_callback = callback;
+    g_bundled_assemblies_callback = callback;
 
     auto patch_instr_ptr = mono_register_bundled_assemblies_ptr + 0;
     auto patch_instr_rva = patch_instr_ptr - g_exe_base_address;

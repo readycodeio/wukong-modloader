@@ -349,6 +349,7 @@ public class ModLoader
         }
     }
 
+    /*
     public void PatchMods()
     {
         foreach (var modObj in Mods)
@@ -400,6 +401,7 @@ public class ModLoader
             ModLoaderSettings.LoadingModName = null;
         }
     }
+    */
 
     public void InitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
     {
@@ -488,11 +490,11 @@ public class ModLoader
         InputManager.Clear();
         
         DeinitMods();
-        UnpatchMods();
+        //UnpatchMods();
         
         LoadMods();
         
-        PatchMods();
+        //PatchMods();
         InitMods(true, reloadContexts);
     }
 

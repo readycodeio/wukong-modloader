@@ -230,7 +230,7 @@
     <ClInclude Include="Windows\console.h" />
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="Mono\assembly_register_bundled_assemblies.asm">
+    <MASM Include="Mono\register_bundled_assemblies.asm">
       <NoLogo>true</NoLogo>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ObjectFileName>x64\Debug\%(FileName).obj</ObjectFileName>

@@ -17,7 +17,7 @@ public static class EntryPoint
         loader.StartInputLoop();
         
         loader.LoadMods();
-        loader.PatchMods();
+        //loader.PatchMods();
         loader.InitMods(false, null);
         
         Log.Debug("Managed entry exiting");
