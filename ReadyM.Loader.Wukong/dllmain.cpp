@@ -18,9 +18,12 @@
 
 static void* g_domain;
 static MonoAssembly* g_assembly;
+static bool g_already_init_managed;
+static HMODULE g_hModule = nullptr;
 
 
-constexpr const char* k_entry_point_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Init";
+constexpr const char* k_entry_point_init_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Init";
+constexpr const char* k_entry_point_deinit_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:DeInit";
 
 
 static bool init_managed_mod_loader()
@@ -33,97 +36,40 @@ static bool init_managed_mod_loader()
         return false;
     }
     
-    auto method_desc = mono_method_desc_new(k_entry_point_method, true);
+    auto init_method_desc = mono_method_desc_new(k_entry_point_init_method, true);
 
-    if (!method_desc)
+    if (!init_method_desc)
     {
         log_error("Invalid method descriptor: mono_method_desc_new failed.");
         return false;
     }
     
-    auto method = mono_method_desc_search_in_image(method_desc, image);
+    auto init_method = mono_method_desc_search_in_image(init_method_desc, image);
 
-    if (!method)
+    if (!init_method)
     {
-        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed.", k_entry_point_method);
-        mono_method_desc_free(method_desc);
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed.", k_entry_point_init_method);
+        mono_method_desc_free(init_method_desc);
         return false;
     }
     
-    mono_method_desc_free(method_desc);
+    mono_method_desc_free(init_method_desc);
 
     MonoException* exc = nullptr;
     MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
-    mono_runtime_invoke(method, nullptr, nullptr, exc_obj);
+    mono_runtime_invoke(init_method, nullptr, nullptr, exc_obj);
 
     if (exc != nullptr)
     {
         log_error("mono_runtime_invoke failed with exception");
         return false;
     }
+
+    g_already_init_managed = true;
     
     log_debug("CSharpLoader init success.");
     return true;
 }
-
-
-static HANDLE g_main_background_thread = nullptr;
-static HMODULE g_hModule = nullptr;
-
-
-static DWORD wait_and_exit(DWORD code)
-{
-    log_error("Exiting with code: {}", code);
-    Sleep(10000);
-    return code;
-}
-
-
-DWORD WINAPI mod_background_thread(LPVOID dwModule)
-{
-    if (!init_managed_mod_loader())
-    {
-        return wait_and_exit(EXIT_FAILURE);
-    }
-    
-    return EXIT_SUCCESS;
-}
-
-
-/*
-static void post_csharp_loader__load_runtimes__callback()
-{
-    g_domain = mono_get_root_domain();
-    if (!g_domain)
-    {
-        log_error("mono_get_root_domain returned null.");
-        return;
-    }
-
-    log_info("Domain initialized");
-
-    g_assembly = mono_domain_assembly_open(g_domain, "ReadyM.Loader.Wukong.Bootstrap.dll");
-    if (!g_assembly)
-    {
-        log_error("mono_domain_assembly_open failed.");
-        return;
-    }
-
-    log_info("Loaded managed mod assembly entry point.");
-
-#ifdef LOAD_THREADED
-    g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
-#else
-    if (!init_managed_mod_loader())
-    {
-        log_error("init_managed_mod_loader failed.");
-        return;
-    }
-#endif
-
-    log_debug("post_csharp_loader__load_runtimes__callback completed successfully.");
-}
-*/
 
 
 static void post_csharp_loader__load__callback()
@@ -300,9 +246,6 @@ static void init_dll(HMODULE hModule)
 
 static void deinit_dll()
 {
-    if (g_main_background_thread != nullptr)
-        TerminateThread(g_main_background_thread, 0);
-    
     deinit_version_dll();
 }
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using CSharpModBase;
@@ -13,6 +14,11 @@ namespace ReadyM.Loader.Wukong.Managed;
 
 public class ModLoader
 {
+    private static ModLoader? _instance;
+    
+    public static ModLoader Instance
+        => _instance ??= new ModLoader();
+    
     private class ModMetadata
     {
         public string ModName;
@@ -27,18 +33,29 @@ public class ModLoader
         public ModMetadata Meta;
         public ICSharpMod Mod;
         public ICSharpModEx? ModEx;
+        public ICSharpModEx_V2? ModExV2;
     }
 
     private List<ModObject> Mods { get; } = new();
     private List<ModObject> ModsPatched { get; } = new();
     private List<ModObject> ModsInitialized { get; } = new();
+    private List<ModObject> ModsLateInitialized { get; } = new();
     
     private InputManager InputManager { get; } = new();
+
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private CancellationToken _cancellationToken;
+    private Thread? _lateInitThread;
     
     private Thread? _logLoopThread;
     private Thread? _inputLoopThread;
     private int _reloadCounter;
 
+    private ModLoader()
+    {
+        _cancellationToken = _cancellationTokenSource.Token;
+    }
+    
     public void SetupDefault()
     {
         Log.Debug("Setting up ModLoader");
@@ -308,16 +325,28 @@ public class ModLoader
                         else
                             Log.Debug($"Found {nameof(ICSharpMod)}: {type}");
 
-                        if (Activator.CreateInstance(type) is ICSharpMod mod)
+                        var modUntyped = Activator.CreateInstance(type);
+                        if (modUntyped == null)
                         {
-                            var modObj = new ModObject()
-                            {
-                                Meta = modMeta,
-                                Mod = mod,
-                                ModEx = mod as ICSharpModEx
-                            };
-                            Mods.Add(modObj);
+                            Log.Error($"Failed to create instance of {type.FullName}");
+                            continue;
                         }
+                        
+                        var mod = modUntyped as ICSharpMod;
+                        if (mod == null)
+                        {
+                            Log.Error($"Instance of {type.FullName} is not ICSharpMod");
+                            continue;
+                        }
+                        
+                        var modObj = new ModObject()
+                        {
+                            Meta = modMeta,
+                            Mod = mod,
+                            ModEx = mod as ICSharpModEx,
+                            ModExV2 = mod as ICSharpModEx_V2,
+                        };
+                        Mods.Add(modObj);
                     }
                 }
             }
@@ -349,61 +378,7 @@ public class ModLoader
         }
     }
 
-    /*
-    public void PatchMods()
-    {
-        foreach (var modObj in Mods)
-        {
-            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
-
-            try
-            {
-                if (modObj.ModEx != null)
-                {
-                    modObj.ModEx.Patch();
-                    ModsPatched.Add(modObj);
-                    Log.Debug($"Patched: {modObj.Mod.Name} ({modObj.Mod.Version})");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Debug($"Patching {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
-            }
-            
-            ModLoaderSettings.LoadingModName = null;
-        }
-    }
-
-    public void UnpatchMods()
-    {
-        var modsPatched = new List<ModObject>(ModsPatched);
-        modsPatched.Reverse();
-        foreach (var modObj in modsPatched)
-        {
-            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
-
-            try
-            {
-                if (modObj.ModEx != null)
-                {
-                    modObj.ModEx.Patch();
-                    ModsPatched.Remove(modObj);
-                    Log.Debug($"Unpatched: {modObj.Mod.Name} ({modObj.Mod.Version})");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Unpatching {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
-            }
-            
-            ModLoaderSettings.LoadingModName = null;
-        }
-    }
-    */
-
-    public void InitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
+    public void InitMods()
     {
         foreach (var modObj in Mods)
         {
@@ -414,7 +389,41 @@ public class ModLoader
                 modObj.Mod.Init();
                 ModsInitialized.Add(modObj);
                 Log.Debug($"Initialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
-                                
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Initializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
+                Log.Error(ex);
+            }
+            
+            ModLoaderSettings.LoadingModName = null;
+        }
+    }
+    
+    public void LateInitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
+    {
+        foreach (var modObj in Mods)
+        {
+            if (_cancellationToken.IsCancellationRequested)
+                break;
+
+            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
+
+            try
+            {
+                if (!ModsInitialized.Contains(modObj))
+                {
+                    Log.Warn($"Skipping late init for not initialized mod: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                    continue;
+                }
+
+                if (modObj.ModExV2 != null)
+                {
+                    modObj.ModExV2.LateInit();
+                    ModsLateInitialized.Add(modObj);
+                    Log.Debug($"Late Initialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                }
+                
                 if (reload && modObj.ModEx != null)
                 {
                     reloadContexts!.TryGetValue(modObj.ModEx.Name, out var reloadContext);
@@ -432,8 +441,10 @@ public class ModLoader
         }
     }
 
-    public void DeinitMods()
+    public void DeInitMods()
     {
+        _lateInitThread?.Join();
+        
         var modsInitialized = new List<ModObject>(ModsInitialized);
         modsInitialized.Reverse();
         foreach (var modObj in modsInitialized)
@@ -442,8 +453,8 @@ public class ModLoader
 
             try
             {
-                modObj.Mod.Init();
-                ModsInitialized.Add(modObj);
+                modObj.Mod.DeInit();
+                ModsInitialized.Remove(modObj);
                 Log.Debug($"Deinitialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
             }
             catch (Exception ex)
@@ -483,21 +494,43 @@ public class ModLoader
 
     public void ReloadMods()
     {
+        _lateInitThread?.Join();
+        
         Log.Debug("Fetching reload contexts");
         var reloadContexts = GetReloadContexts();
         
         Log.Debug("Reloading mods");
         InputManager.Clear();
         
-        DeinitMods();
-        //UnpatchMods();
+        DeInitMods();
         
         LoadMods();
         
-        //PatchMods();
-        InitMods(true, reloadContexts);
+        InitMods();
+        LateInitMods(true, reloadContexts);
     }
 
+    public void StartLateInitMods()
+    {
+        _lateInitThread = new Thread(() =>
+        {
+            Log.Debug("Starting late init thread");
+            try
+            {
+                LateInitMods(false, null);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Late init mods failed:");
+                Log.Error(ex);
+            }
+        })
+        {
+            IsBackground = false,
+        };
+        _lateInitThread.Start();
+    }
+    
     public void StartLogLoop()
     {
         _logLoopThread = new Thread(LogLoop)
@@ -507,12 +540,12 @@ public class ModLoader
         _logLoopThread.Start();
     }
 
-    private static void LogLoop()
+    private void LogLoop()
     {
-        while (true)
+        while (!_cancellationToken.IsCancellationRequested)
         {
             Log.Flush();
-            Thread.Sleep(100);
+            _cancellationToken.WaitHandle.WaitOne(100);
         }
     }
 
@@ -530,10 +563,22 @@ public class ModLoader
 
     private void InputLoop()
     {
-        while (true)
+        while (!_cancellationToken.IsCancellationRequested)
         {
             InputManager.Update();
-            Thread.Sleep(10); // 10ms
+            _cancellationToken.WaitHandle.WaitOne(10);
         }
+    }
+
+    public void Cancel()
+    {
+        Log.Debug("Cancelling in progress operations...");
+        _cancellationTokenSource.Cancel();
+        
+        _lateInitThread?.Join();
+        _logLoopThread?.Join();
+        _inputLoopThread?.Join();
+        
+        Log.Debug("All operations cancelled.");
     }
 }

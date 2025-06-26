@@ -5,9 +5,14 @@ namespace ReadyM.Loader.Wukong.Bootstrap;
 // ReSharper disable once UnusedType.Global
 public static class EntryPoint
 {
+    private static Assembly? _loaderAssembly;
+    private static Type? _modLoaderEntryPoint;
+    
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
+        Log.Debug("Bootstrapping");
+        
         try
         {
             Bootstrapper.Setup();
@@ -20,10 +25,9 @@ public static class EntryPoint
             return;
         }
 
-        Assembly loaderAssembly;
         try
         {
-            loaderAssembly = Assembly.LoadFrom("CSharpLoader\\ReadyM.Loader.Wukong.Managed.dll");
+            _loaderAssembly = Assembly.LoadFrom("CSharpLoader\\ReadyM.Loader.Wukong.Managed.dll");
         }
         catch (Exception ex)
         {
@@ -33,17 +37,19 @@ public static class EntryPoint
             return;
         }
 
-        var modLoaderEntryPoint = loaderAssembly.GetType("ReadyM.Loader.Wukong.Managed.EntryPoint");
-        if (modLoaderEntryPoint == null)
+        _modLoaderEntryPoint = _loaderAssembly.GetType("ReadyM.Loader.Wukong.Managed.EntryPoint");
+        if (_modLoaderEntryPoint == null)
         {
             Log.Error("Could not find entry point");
+            Log.Flush();
             return;
         }
         
-        var initMethod = modLoaderEntryPoint.GetMethod("Init");
+        var initMethod = _modLoaderEntryPoint.GetMethod("Init");
         if (initMethod == null)
         {
             Log.Error("Could not find Init method in entry point");
+            Log.Flush();
             return;
         }
         
@@ -55,8 +61,10 @@ public static class EntryPoint
         {
             Log.Error("Error while invoking Init method");
             Log.Error(ex);
+            Log.Flush();
         }
 
-        Log.Debug("Bootstrap exit.");
+        Log.Debug("Bootstrapping complete");
+        Log.Flush();
     }
 }

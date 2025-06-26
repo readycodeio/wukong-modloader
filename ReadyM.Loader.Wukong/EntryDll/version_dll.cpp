@@ -28,7 +28,8 @@ bool init_version_dll()
 
 bool deinit_version_dll()
 {
-    if(h_module_dll != nullptr) {
+    if (h_module_dll != nullptr)
+    {
         FreeLibrary(h_module_dll);
         h_module_dll = nullptr;
     }
@@ -48,7 +49,7 @@ void setup_dll_func(T*& func_ptr, const char* func_name)
 #define D(dll_funcname, ...)            \
     static decltype(dll_funcname)* p;   \
     setup_dll_func(p, #dll_funcname);   \
-    return p(__VA_ARGS__);          \
+    return p(__VA_ARGS__);              \
     __pragma(comment(linker, "/EXPORT:" __FUNCTION__))
 
 
