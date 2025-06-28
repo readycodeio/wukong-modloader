@@ -30,9 +30,7 @@ BundledSymfile** get_bundled_symfiles_ptr();
 bool mono_register_symfile_for_assembly(char* assembly_name, const uint8_t *raw_contents, int size);
 
 bool can_load_symbols();
-bool load_debugger_symbols(const std::filesystem::path& dir);
-
-bool load_assembly_bundles(const std::filesystem::path& dir);
+bool load_debugger_symbols(const std::vector<std::filesystem::path>& dirs);
 
 
 template<>

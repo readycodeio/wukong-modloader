@@ -10,6 +10,13 @@
 #include <utility>
 
 
+static std::mutex g_log_mutex;
+
+extern std::unique_ptr<std::ostream> g_log_file_stream;
+extern std::unique_ptr<std::wostream> g_log_file_wstream;
+extern int g_log_file_stream_fd;
+
+
 template<typename T>
 concept is_wformatable = requires {
     typename std::formatter<T, wchar_t>;
@@ -66,9 +73,6 @@ static inline std::string get_timestamp() {
 }
 
 
-static std::mutex g_log_mutex;
-
-
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
 void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
@@ -77,10 +81,10 @@ void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt
 
     std::wstring message = std::vformat(fmt.get(), std::make_wformat_args(fmt_args...));
 
-    std::wcout << get_wtimestamp()
-               << L" [" << prefix << L"] "
-               << message
-               << L"\n" << std::flush;
+    auto timestamp = get_wtimestamp();
+    std::wcout              << timestamp << L" [" << prefix << L"] " << message << L"\n" << std::flush;
+    if (g_log_file_wstream != nullptr)
+        *g_log_file_wstream << timestamp << L" [" << prefix << L"] " << message << L"\n" << std::flush;
 }
 
 
@@ -92,12 +96,18 @@ void log_impl(const std::string& prefix, std::format_string<FormatArgs...> fmt, 
 
     std::string message = std::vformat(fmt.get(), std::make_format_args(fmt_args...));
 
-    std::cout << get_timestamp()
-              << " [" << prefix << "] "
-              << message
-              << "\n" << std::flush;
+    auto timestamp = get_timestamp();
+    std::cout               << timestamp << " [" << prefix << "] " << message << "\n" << std::flush;
+    if (g_log_file_stream != nullptr)
+        *g_log_file_stream  << timestamp << " [" << prefix << "] " << message << "\n" << std::flush;
 }
 
+
+template<typename... FormatArgs>
+    requires (is_wformatable<FormatArgs> && ...)
+void log_trace(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"T", fmt, std::forward<FormatArgs>(fmt_args)...);
+}
 
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
@@ -123,6 +133,18 @@ void log_error(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
     log_impl(L"E", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
+template<typename... FormatArgs>
+    requires (is_wformatable<FormatArgs> && ...)
+void log_crit(std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl(L"C", fmt, std::forward<FormatArgs>(fmt_args)...);
+}
+
+
+template<typename... FormatArgs>
+    requires (is_formatable<FormatArgs> && ...)
+void log_trace(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("T", fmt, std::forward<FormatArgs>(fmt_args)...);
+}
 
 template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
@@ -148,7 +170,15 @@ void log_error(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) 
     log_impl("E", fmt, std::forward<FormatArgs>(fmt_args)...);
 }
 
+template<typename... FormatArgs>
+    requires (is_formatable<FormatArgs> && ...)
+void log_crit(std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args) {
+    log_impl("C", fmt, std::forward<FormatArgs>(fmt_args)...);
+}
+
 
 void log_debug_ptr(const std::string& name, void* ptr);
 void log_debug_ptr(const std::string& name, uint64_t ptr);
 void log_error_missing_ptr(const std::string& name);
+
+void init_logging(std::filebuf& log_file_buffer);

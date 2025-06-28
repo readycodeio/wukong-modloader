@@ -167,14 +167,14 @@ bool intercept_register_bundled_assemblies(void (*callback)())
 }
 
 
-bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
+bool load_assembly_bundles(const std::vector<std::filesystem::path>& dirs)
 {
     auto old_bundles = get_mono_register_bundled_assemblies();
     std::vector<MonoBundledAssembly*> new_bundles_arr;
 
     std::vector<int> used_indices = {};
 
-    auto process_assembly = [&old_bundles, &new_bundles_arr, &used_indices](std::filesystem::path path)
+    auto process_assembly = [&old_bundles, &new_bundles_arr, &used_indices](const std::filesystem::path& path)
     {
         log_debug(L"Processing: {}", path.wstring());
         std::ifstream dll_file(path, std::ios::in | std::ios::binary | std::ios::ate);
@@ -196,6 +196,12 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
                 auto old_bundle = old_bundles[i];
                 if (assembly_name == old_bundle->name)
                 {
+                    if (std::ranges::find(used_indices, i) != used_indices.end())
+                    {
+                        log_debug("Not replacing duplicate bundle override: {}", assembly_name);
+                        break;
+                    }
+                    
                     log_debug("Replacing existing bundle: {}", assembly_name);
                     auto new_bundle = glib_new0<MonoBundledAssembly>();
                     new_bundle->name = old_bundle->name;
@@ -259,6 +265,8 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
     {
         if (std::ranges::find(used_indices, i) != used_indices.end())
             continue;
+        
+        log_debug("Keeping old bundle: {}", old_bundles[i]->name);
         auto old_bundle = old_bundles[i];
         new_bundles_arr.push_back(old_bundle);
     }

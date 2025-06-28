@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net472</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -9,6 +9,7 @@
         <DebugType>portable</DebugType>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <RootNamespace>EmbedCSharpLoader.Managed</RootNamespace>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
     
     <Target Name="PrintBuildVersion" AfterTargets="AfterBuild">
@@ -16,8 +17,9 @@
     </Target>
 
     <ItemGroup>
-      <ProjectReference Include="..\CSharpModBase\CSharpModBase.csproj" />
-      <ProjectReference Include="..\ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj" />
+        <ProjectReference Include="..\CSharpModBase\CSharpModBase.csproj" />
+        <ProjectReference Include="..\CSharpModBaseV2\CSharpModBaseV2.csproj" />
+        <ProjectReference Include="..\ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -10,4 +10,14 @@
         <InformationalVersion>0.7.$(BuildTimestamp)</InformationalVersion>
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/RuleSet.ruleset</CodeAnalysisRuleSet>
+    </PropertyGroup>
 </Project>

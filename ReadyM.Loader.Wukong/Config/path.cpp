@@ -25,6 +25,12 @@ std::filesystem::path get_base_dir()
 }
 
 
+std::filesystem::path get_loader_dir()
+{
+    return get_base_dir() / std::filesystem::path(L"CSharpLoader");
+}
+
+
 std::filesystem::path get_mod_dir()
 {
     if (g_mod_dir_override.has_value())
@@ -34,7 +40,7 @@ std::filesystem::path get_mod_dir()
 }
 
 
-void set_mod_dir_override(std::filesystem::path mod_dir)
+void set_mod_dir_override(const std::filesystem::path& mod_dir)
 {
-    g_mod_dir_override = std::move(mod_dir);
+    g_mod_dir_override = mod_dir;
 }

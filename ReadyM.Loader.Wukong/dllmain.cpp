@@ -18,6 +18,7 @@
 #include "Mono/debug-helpers.h"
 #include "Mono/jit.h"
 #include "Mono/mono-debug.h"
+#include "Mono/mono-error.h"
 #include "Mono/object-internals.h"
 #include "USharp/usharp.h"
 #include "Windows/console.h"
@@ -29,6 +30,7 @@ static bool g_already_init_managed;
 static HMODULE g_hModule = nullptr;
 
 
+constexpr const char* k_entry_point_init_logging_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:InitLogging";
 constexpr const char* k_entry_point_init_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Init";
 constexpr const char* k_entry_point_deinit_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:DeInit";
 
@@ -39,7 +41,24 @@ static bool init_managed_mod_loader()
 
     if (!image)
     {
-        log_error("mono_assembly_get_image failed.");
+        log_error("mono_assembly_get_image failed");
+        return false;
+    }
+
+    auto init_logging_method_desc = mono_method_desc_new(k_entry_point_init_logging_method, true);
+
+    if (!init_logging_method_desc)
+    {
+        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_init_logging_method);
+        return false;
+    }
+    
+    auto init_logging_method = mono_method_desc_search_in_image(init_logging_method_desc, image);
+
+    if (!init_logging_method)
+    {
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_init_logging_method);
+        mono_method_desc_free(init_logging_method_desc);
         return false;
     }
 
@@ -47,7 +66,7 @@ static bool init_managed_mod_loader()
 
     if (!init_method_desc)
     {
-        log_error("Invalid method descriptor: mono_method_desc_new failed.");
+        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_deinit_method);
         return false;
     }
 
@@ -55,20 +74,46 @@ static bool init_managed_mod_loader()
 
     if (!init_method)
     {
-        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed.", k_entry_point_init_method);
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_init_method);
+        mono_method_desc_free(init_logging_method_desc);
         mono_method_desc_free(init_method_desc);
         return false;
     }
 
+    mono_method_desc_free(init_logging_method_desc);
     mono_method_desc_free(init_method_desc);
 
     MonoException* exc = nullptr;
     MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
+
+    void* params[2] = {
+        &g_log_file_handle,
+        nullptr
+    };
+    
+    mono_runtime_invoke(init_logging_method, nullptr, params, nullptr);
+    
+    if (exc != nullptr)
+    {
+        log_error("mono_runtime_invoke {} failed with exception", k_entry_point_init_logging_method);
+        MonoObject* exc0 = nullptr;
+        MonoError error0;
+        auto exc_mono_str = mono_object_try_to_string(reinterpret_cast<MonoObject*>(exc), &exc0, &error0);
+        auto exc_msg = mono_string_chars_internal(exc_mono_str);
+        log_error(L"{}", exc_msg);
+        return false;
+    }
+
     mono_runtime_invoke(init_method, nullptr, nullptr, exc_obj);
 
     if (exc != nullptr)
     {
-        log_error("mono_runtime_invoke failed with exception");
+        log_error("mono_runtime_invoke {} failed with exception", k_entry_point_init_method);
+        MonoObject* exc0 = nullptr;
+        MonoError error0;
+        auto exc_mono_str = mono_object_try_to_string(reinterpret_cast<MonoObject*>(exc), &exc0, &error0);
+        auto exc_msg = mono_string_chars_internal(exc_mono_str);
+        log_error(L"{}", exc_msg);
         return false;
     }
 
@@ -117,11 +162,13 @@ static void post_load_assembly_bundles()
 {
     log_debug("Assembly bundles callback triggered.");
 
+    auto loader_dir = get_loader_dir();
     auto mod_dir = get_mod_dir();
     auto dirs = std::vector
     {
+        loader_dir / L"Overrides",
         mod_dir / L"Overrides",
-        std::filesystem::path(L"CSharpLoader") / "ReadyM.Loader.Wukong.Bootstrap.dll"
+        loader_dir / "ReadyM.Loader.Wukong.Bootstrap.dll"
     };
 
     if (load_assembly_bundles(dirs))
@@ -240,7 +287,7 @@ static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
     return result;
 }
 
-std::wstring Utf8ToWide(const std::string& str)
+std::wstring utf8_to_wide(const std::string& str)
 {
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
     std::wstring wstr(size_needed - 1, 0); // -1 to exclude null terminator
@@ -248,7 +295,7 @@ std::wstring Utf8ToWide(const std::string& str)
     return wstr;
 }
 
-std::wstring GetHandshakeFilePath()
+std::wstring get_handshake_file_path()
 {
     wchar_t* localAppData = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &localAppData)))
@@ -260,7 +307,7 @@ std::wstring GetHandshakeFilePath()
     return L"";
 }
 
-bool IsLauncherProcessStillRunning(DWORD pid, const std::wstring& expectedImageName)
+static bool is_launcher_process_still_running(DWORD pid, const std::wstring& expectedImageName)
 {
     HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
     if (!hProc)
@@ -281,7 +328,7 @@ bool IsLauncherProcessStillRunning(DWORD pid, const std::wstring& expectedImageN
     return _wcsicmp(filename.c_str(), expectedImageName.c_str()) == 0;
 }
 
-std::unordered_map<std::wstring, std::wstring> ParseEnvFile(const std::wstring& path)
+static std::unordered_map<std::wstring, std::wstring> parse_env_file(const std::wstring& path)
 {
     std::unordered_map<std::wstring, std::wstring> map;
 
@@ -297,8 +344,8 @@ std::unordered_map<std::wstring, std::wstring> ParseEnvFile(const std::wstring& 
         std::string keyStr = line.substr(0, pos);
         std::string valueStr = line.substr(pos + 1);
 
-        std::wstring key = Utf8ToWide(keyStr);
-        std::wstring value = Utf8ToWide(valueStr);
+        std::wstring key = utf8_to_wide(keyStr);
+        std::wstring value = utf8_to_wide(valueStr);
 
         map[key] = value;
     }
@@ -306,10 +353,10 @@ std::unordered_map<std::wstring, std::wstring> ParseEnvFile(const std::wstring& 
     return map;
 }
 
-std::optional<std::wstring> TryGetModFolderOverride()
+static std::optional<std::wstring> try_get_mod_folder_override()
 {
-    auto path = GetHandshakeFilePath();
-    auto env = ParseEnvFile(path);
+    auto path = get_handshake_file_path();
+    auto env = parse_env_file(path);
 
     // print the env map for debugging
     log_debug(L"Parsed environment variables from {}:", path);
@@ -321,7 +368,7 @@ std::optional<std::wstring> TryGetModFolderOverride()
     if (env.contains(L"LAUNCHER_PID"))
     {
         DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
-        if (!IsLauncherProcessStillRunning(pid, L"ReadyM.Launcher.exe"))
+        if (!is_launcher_process_still_running(pid, L"ReadyM.Launcher.exe"))
         {
             log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
             return std::nullopt;
@@ -342,6 +389,11 @@ std::optional<std::wstring> TryGetModFolderOverride()
 
 static bool init_embed_runtime()
 {
+    if (!init_console_logging())
+    {
+        log_error("Failed to initialize logging.");
+    }
+    
     auto enable_console_flag = load_enable_console();
 
     if (enable_console_flag == 1)
@@ -350,7 +402,7 @@ static bool init_embed_runtime()
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
 
-    auto mod_dir_override = TryGetModFolderOverride();
+    auto mod_dir_override = try_get_mod_folder_override();
 
     if (mod_dir_override.has_value())
     {
@@ -379,11 +431,18 @@ static bool init_embed_runtime()
     }
 
     auto mod_dir = get_mod_dir();
-
+    auto loader_dir = get_loader_dir();
+    
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
     if (enable_develop_flag)
     {
-        if (!load_debugger_symbols(mod_dir / L"ReflectionOnly"))
+        auto dirs = std::vector
+        {
+            mod_dir / L"ReflectionOnly",
+            loader_dir
+        };
+        
+        if (!load_debugger_symbols(dirs))
         {
             log_error("Failed to load debugger symbols.");
             // NOTE: non-fatal error

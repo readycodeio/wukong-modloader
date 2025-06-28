@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
 
 namespace EmbedCSharpLoader.Managed;
@@ -8,12 +9,12 @@ namespace EmbedCSharpLoader.Managed;
 /// <summary>
 /// Copied from the mod. TODO: Shared project
 /// </summary>
-public class IpcHelpers
+public class IpcHelper(ILogger logger)
 {
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern uint GetEnvironmentVariable(string lpName, StringBuilder lpBuffer, uint nSize);
 
-    private static string? GetEnvironmentVariable(string variable)
+    private string? GetEnvironmentVariable(string variable)
     {
         const int initialSize = 512;
         StringBuilder buffer = new(initialSize);
@@ -39,18 +40,18 @@ public class IpcHelpers
         return buffer.ToString();
     }
 
-    public static Dictionary<string, string> ReadIpcHandshakeFile()
+    public Dictionary<string, string> ReadIpcHandshakeFile()
     {
         var tempDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ReadyM.Launcher");
         var filePath = Path.Combine(tempDir, "wukong_handshake.env");
 
         if (!File.Exists(filePath))
         {
-            Log.Error($"Handshake file not found at {filePath}. Launch the game from the ReadyM Launcher.");
+            logger.LogError("Handshake file not found at {FilePath}. Launch the game from the ReadyM Launcher.", filePath);
             return [];
         }
 
-        Log.Debug($"Reading handshake file: {filePath}");
+        logger.LogDebug("Reading handshake file: {FilePath}", filePath);
         var lines = File.ReadAllLines(filePath);
         var data = new Dictionary<string, string>();
 
@@ -64,11 +65,11 @@ public class IpcHelpers
                 var key = match.Groups["key"].Value.Trim();
                 var value = match.Groups["value"].Value.Trim();
                 data[key] = value;
-                Log.Debug($"Parsed {key}={value}");
+                logger.LogDebug("Parsed {Key}={Value}", key, value);
             }
             else
             {
-                Log.Warn($"Failed to parse line: {line}");
+                logger.LogWarning("Failed to parse line: {Line}", line);
             }
         }
 

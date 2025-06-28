@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using CSharpModBase;
 using CSharpModBase.Input;
 
-namespace ReadyM.Loader.Wukong.Managed;
+namespace CSharpManager;
 
 public class InputManager : IInputManager
 {
@@ -19,9 +22,8 @@ public class InputManager : IInputManager
 
     private void FindMainWindow()
     {
-        uint currentProcessId = GetCurrentProcessId();
         StringBuilder stringBuilder = new(64);
-        EnumWindows(new EnumWindowsProc((hWnd, lParam) =>
+        EnumWindows((hWnd, lParam) =>
         {
             GetWindowThreadProcessId(hWnd, out uint processId);
             if (processId == GetCurrentProcessId() &&
@@ -32,8 +34,8 @@ public class InputManager : IInputManager
                 return false;
             }
 
-            return true; // 继续枚举
-        }), IntPtr.Zero);
+            return true;
+        }, IntPtr.Zero);
     }
 
     private void HandleKeys(List<HotKeyItem> items)
@@ -125,7 +127,7 @@ public class InputManager : IInputManager
     }
 
     [DllImport("user32.dll")]
-    private extern static IntPtr GetForegroundWindow();
+    private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll", SetLastError = true)]
     static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
@@ -135,7 +137,6 @@ public class InputManager : IInputManager
 
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
-    // 导入Win32 API函数
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
     private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 

@@ -1,12 +1,13 @@
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
-public class Bootstrapper
+public class Bootstrapper(ILogger logger)
 {
-    public static void Setup()
+    public void Setup()
     {
-        Log.Debug("Bootstrapper: setting up callbacks");
+        logger.LogDebug("Bootstrapper: setting up callbacks");
         
         var currentDomain = AppDomain.CurrentDomain;
         currentDomain.AssemblyResolve += AssemblyResolve;
@@ -16,69 +17,66 @@ public class Bootstrapper
 
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
-            Log.Debug($"Already loaded: {asm.FullName}");
+            logger.LogDebug("Already loaded: {AsmName}", asm.FullName);
         }
         
-        Log.Debug("Bootstrapper: callbacks set up");
+        logger.LogDebug("Bootstrapper: callbacks set up");
     }
 
-    private static Assembly? TryLoadDll(string path)
+    private Assembly? TryLoadDll(string path)
     {
-        Log.Debug($"Trying to load from: {path}");
+        logger.LogDebug("Trying to load from: {Path}", path);
         if (File.Exists(path))
         {
-            Log.Debug("Success");
+            logger.LogDebug("Success");
             return Assembly.LoadFrom(path);
         }
-
+        
         return null;
     }
 
-    private static Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
+    private Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
     {
         try
         {
             var dllName = $"{new AssemblyName(args.Name).Name}.dll";
 
             Assembly? result;
-            if (ModLoaderSettings.LoadingModName == null)
+            if (Settings.LoadingModName == null)
             {
                 // NOTE: This will prevent the assembly from being loaded
-                Log.Warn($"AssemblyResolve: {args.Name} but no mod is loading");
-                result = TryLoadDll(Path.Combine(ModLoaderSettings.ModDir, "Common", dllName)) ??
-                         (ModLoaderSettings.CloneDir != null ? TryLoadDll(Path.Combine(ModLoaderSettings.CloneDir, "Common", dllName)) : null) ??
-                         TryLoadDll(Path.Combine(ModLoaderSettings.LoaderDir, dllName));
+                logger.LogWarning("AssemblyResolve: {Name} but no mod is loading", args.Name);
+                result = TryLoadDll(Path.Combine(Settings.ModDir, "Common", dllName)) ??
+                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, "Common", dllName)) : null) ??
+                         TryLoadDll(Path.Combine(Settings.LoaderDir, dllName));
             }
             else
             {
-                result = TryLoadDll(Path.Combine(ModLoaderSettings.ModDir, ModLoaderSettings.LoadingModName, dllName)) ??
-                         TryLoadDll(Path.Combine(ModLoaderSettings.ModDir, "Common", dllName)) ??
-                         (ModLoaderSettings.CloneDir != null ? TryLoadDll(Path.Combine(ModLoaderSettings.CloneDir, ModLoaderSettings.LoadingModName, dllName)) : null) ??
-                         (ModLoaderSettings.CloneDir != null ? TryLoadDll(Path.Combine(ModLoaderSettings.CloneDir, "Common", dllName)) : null) ??
-                         TryLoadDll(Path.Combine(ModLoaderSettings.LoaderDir, dllName));
+                result = TryLoadDll(Path.Combine(Settings.ModDir, Settings.LoadingModName, dllName)) ??
+                         TryLoadDll(Path.Combine(Settings.ModDir, "Common", dllName)) ??
+                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, Settings.LoadingModName, dllName)) : null) ??
+                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, "Common", dllName)) : null) ??
+                         TryLoadDll(Path.Combine(Settings.LoaderDir, dllName));
             }
 
             if (result != null)
                 return result;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"Load assembly {args.Name} failed:");
-            Log.Error(e);
+            logger.LogError(ex, "Load assembly {Name} failed:", args.Name);
         }
 
         return Assembly.Load(args.Name);
     }
     
-    private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        Log.Error("UnhandledException:");
-        Log.Error((Exception)e.ExceptionObject);
+        logger.LogError(e.ExceptionObject as Exception, "UnhandledException");
     }
 
-    private static void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+    private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
     {
-        Log.Error("UnobservedTaskException:");
-        Log.Error(e.Exception);
+        logger.LogError(e.Exception, "UnobservedTaskException:");
     }
 }
