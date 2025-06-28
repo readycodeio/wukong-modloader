@@ -1,4 +1,5 @@
 ﻿using ReadyM.Loader.Wukong.Bootstrap;
+using UnrealEngine.Runtime;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
@@ -8,18 +9,33 @@ public static class EntryPoint
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
-        Log.Debug("Managed entry point");
+        Log.Debug("Managed entry point init");
 
-        ModLoader loader = new();
-
+        var loader = ModLoader.Instance;
+        
         loader.SetupDefault();
         loader.StartLogLoop();
         loader.StartInputLoop();
         
         loader.LoadMods();
-        //loader.PatchMods();
-        loader.InitMods(false, null);
+        loader.InitMods();
+        loader.StartLateInitMods();
+
+        FCoreDelegates.OnExit.Bind(DeInit);
         
-        Log.Debug("Managed entry exiting");
+        Log.Debug("Managed entry init complete");
+    }
+
+    // ReSharper disable once UnusedMember.Global
+    public static void DeInit()
+    {
+        Log.Debug("Managed entry point deinit");
+
+        var loader = ModLoader.Instance;
+
+        loader.Cancel();
+        loader.DeInitMods();
+        
+        Log.Debug("Managed entry deinit complete");
     }
 }

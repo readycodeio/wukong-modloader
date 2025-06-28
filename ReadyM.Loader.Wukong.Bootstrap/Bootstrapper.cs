@@ -6,9 +6,9 @@ public class Bootstrapper
 {
     public static void Setup()
     {
-        Log.Debug("Bootstrapping ReadyM C# Loader");
+        Log.Debug("Bootstrapper: setting up callbacks");
         
-        AppDomain currentDomain = AppDomain.CurrentDomain;
+        var currentDomain = AppDomain.CurrentDomain;
         currentDomain.AssemblyResolve += AssemblyResolve;
         currentDomain.UnhandledException += OnUnhandledException;
 
@@ -19,7 +19,7 @@ public class Bootstrapper
             Log.Debug($"Already loaded: {asm.FullName}");
         }
         
-        Log.Debug("Bootstrap complete");
+        Log.Debug("Bootstrapper: callbacks set up");
     }
 
     private static Assembly? TryLoadDll(string path)
