@@ -1,6 +1,6 @@
 #!powershell.exe -ExecutionPolicy Bypass -File
 
-$solutionName = "CSharpLoader"
+$solutionName = "EmbedCSharpLoader"
 $zipName = "Loader"
 
 # Define the source and destination directories

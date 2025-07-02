@@ -1,6 +1,6 @@
 #!powershell.exe -ExecutionPolicy Bypass -File
 param(
-    [String]$Configuration="Debug"
+    [String]$Configuration="Release"
 )
 
 . ./BuildInfo.ps1
@@ -14,10 +14,10 @@ if (-not (Test-Path $solutionPath)) {
 }
 
 Write-Output "Building solution $solutionPath in configuration $Configuration..."
-$buildOutput = dotnet build $solutionPath -c $Configuration -v minimal /t:Rebuild | Tee-Object -FilePath 'build.log'
+$buildOutput = MSBuild $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild
 
 # 2. Extract version number from build output
-$pattern = '\s*Build Version:\s*(?<ver>\d+(\.\d+){4})'
+$pattern = '\s*Build Version:\s*(?<ver>\d+(\.\d+){3})'
 $match   = $buildOutput | Select-String -Pattern $pattern -AllMatches
 
 if (-not $match) {
