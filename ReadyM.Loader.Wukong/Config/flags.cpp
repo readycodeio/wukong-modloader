@@ -8,7 +8,7 @@
 
 static std::filesystem::path get_ini_file_path()
 {
-    return get_mod_base_path() / std::filesystem::path(L"CSharpLoader") / "b1cs.ini";
+    return get_base_dir() / std::filesystem::path(L"CSharpLoader") / "b1cs.ini";
 }
 
 

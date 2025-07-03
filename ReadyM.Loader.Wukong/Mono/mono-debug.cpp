@@ -148,7 +148,7 @@ bool load_debugger_symbols(const std::filesystem::path& dir)
     
     log_debug("Loading symbols for bundled assemblies");
 
-    auto full_dir = get_mod_base_path() / dir;
+    auto full_dir = get_base_dir() / dir;
     
     std::error_code ec;
     const std::filesystem::directory_iterator full_dir_end;

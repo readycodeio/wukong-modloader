@@ -224,7 +224,7 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
     
     for (auto& dir : dirs)
     {
-        auto full_dir = get_mod_base_path() / dir;
+        auto full_dir = get_base_dir() / dir;
         log_debug(L"Full dir: {}", full_dir.wstring());
     
         if (!std::filesystem::exists(full_dir))
@@ -305,7 +305,7 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
         return nullptr;
     }
 
-    auto full_filename = get_mod_base_path() / filename;
+    auto full_filename = get_base_dir() / filename;
     
     char full_filenameA[MAX_PATH];
     // convert to utf-8 to support Chinese path
