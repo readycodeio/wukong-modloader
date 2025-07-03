@@ -12,7 +12,7 @@
 std::string load_param_from_file(const std::filesystem::path& file_path, const std::string& default_param_value, const std::string& param_name)
 {
     std::string param_value;
-    auto abs_file_path = get_mod_base_path() / file_path;
+    auto abs_file_path = get_base_dir() / file_path;
     
     if (std::ifstream(abs_file_path).good())
     {

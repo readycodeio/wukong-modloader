@@ -1,4 +1,5 @@
 #include <iterator>
+#include <regex>
 #include <windows.h>
 
 #include "Config/debugger.h"
@@ -110,9 +111,10 @@ static void post_load_assembly_bundles()
 {
     log_debug("Assembly bundles callback triggered.");
 
+    auto mod_dir = get_mod_dir();
     auto dirs = std::vector
     {
-        std::filesystem::path(L"CSharpLoader") / L"Mods" / L"Overrides",
+        mod_dir / L"Overrides",
         std::filesystem::path(L"CSharpLoader") / "ReadyM.Loader.Wukong.Bootstrap.dll"
     };
     
@@ -129,7 +131,7 @@ static void post_load_assembly_bundles()
 
 static std::wstring get_version_string()
 {
-    auto dll_path = get_mod_base_path() / L"CSharpLoader" / L"ReadyM.Loader.Wukong.Managed.dll";
+    auto dll_path = get_base_dir() / L"CSharpLoader" / L"ReadyM.Loader.Wukong.Managed.dll";
     
     DWORD handle = 0;
     DWORD size = GetFileVersionInfoSizeW(dll_path.c_str(), &handle);
@@ -175,6 +177,32 @@ static std::wstring get_title_string()
 }
 
 
+static std::wstring get_cmdline()
+{
+    auto cmdline = GetCommandLineW();
+    return cmdline;
+}
+
+
+static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
+{
+    int argc;
+    auto argv = CommandLineToArgvW(cmdline.c_str(), &argc);
+
+    std::vector<std::wstring> result;
+    if (argv)
+    {
+        for (auto i = 0; i < argc; ++i)
+        {
+            result.push_back(argv[i]);
+        }
+        LocalFree(argv);
+    }
+
+    return result;
+}
+
+
 static bool init_embed_runtime()
 {
     auto enable_console_flag = load_enable_console();
@@ -183,6 +211,22 @@ static bool init_embed_runtime()
     {
         create_console();
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
+    }
+    
+    auto cmdline = get_cmdline();
+    log_debug(L"Command line: {}", cmdline);
+
+    auto mod_folder_regex = std::wregex(LR"RX([a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\)*[^<>:"/\\|?*]*)RX");
+    std::wsmatch m;
+    if (std::regex_search(cmdline, m, mod_folder_regex))
+    {
+        auto mod_dir_override = m.str(0);
+        set_mod_dir_override(mod_dir_override);
+        log_debug(L"Mod folder override: {}", get_mod_dir().c_str());
+    }
+    else
+    {
+        log_debug(L"Mod folder: {}", get_mod_dir().c_str());
     }
     
     auto enable_jit_flag = load_enable_jit();
@@ -201,10 +245,12 @@ static bool init_embed_runtime()
         log_error("Failed to intercept register bundled assemblies.");
     }
     
+    auto mods_dir = get_mod_dir();
+    
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
     if (enable_develop_flag)
     {
-        if (!load_debugger_symbols(std::filesystem::path(L"CSharpLoader") / L"Mods" / L"ReflectionOnly"))
+        if (!load_debugger_symbols(mods_dir / L"ReflectionOnly"))
         {
             log_error("Failed to load debugger symbols.");
             // NOTE: non-fatal error

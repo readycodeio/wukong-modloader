@@ -28,6 +28,7 @@ public static class ModLoaderSettings
 
     public static string LoaderDir { get; set; } = Path.Combine(BaseDir, "CSharpLoader");
     
-    public static string ModDir => Path.Combine(BaseDir, ModDirSuffix);
+    public static string? ModDirOverride { get; set; }
+    public static string ModDir => ModDirOverride ?? Path.Combine(BaseDir, ModDirSuffix);
     public static string DataDir => Path.Combine(BaseDir, "CSharpLoader\\Data");
 }

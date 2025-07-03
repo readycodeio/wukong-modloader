@@ -98,7 +98,7 @@ public class ModLoader
 
             if (pathMatch.Success)
             {
-                ModLoaderSettings.ModDirSuffix = pathMatch.Groups[1].Value;
+                ModLoaderSettings.ModDirOverride = pathMatch.Groups[1].Value;
                 Log.Debug($"Mod folder override: {ModLoaderSettings.ModDir}");
             }
             else
