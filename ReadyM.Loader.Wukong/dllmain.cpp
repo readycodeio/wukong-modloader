@@ -216,11 +216,14 @@ static bool init_embed_runtime()
     auto cmdline = get_cmdline();
     log_debug(L"Command line: {}", cmdline);
 
-    auto mod_folder_regex = std::wregex(LR"RX([a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\)*[^<>:"/\\|?*]*)RX");
+    std::wstring path_pattern = LR"RX([a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\)*[^<>:"/\\|?*]*)RX";
+    std::wstring mod_loader_pattern = LR"RX(-mod_folder "?()RX" + path_pattern + LR"RX()"?)RX";
+    auto mod_folder_regex = std::wregex(mod_loader_pattern);
+
     std::wsmatch m;
     if (std::regex_search(cmdline, m, mod_folder_regex))
     {
-        auto mod_dir_override = m.str(0);
+        auto mod_dir_override = m.str(1);
         set_mod_dir_override(mod_dir_override);
         log_debug(L"Mod folder override: {}", get_mod_dir().c_str());
     }
@@ -245,12 +248,12 @@ static bool init_embed_runtime()
         log_error("Failed to intercept register bundled assemblies.");
     }
     
-    auto mods_dir = get_mod_dir();
+    auto mod_dir = get_mod_dir();
     
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
     if (enable_develop_flag)
     {
-        if (!load_debugger_symbols(mods_dir / L"ReflectionOnly"))
+        if (!load_debugger_symbols(mod_dir / L"ReflectionOnly"))
         {
             log_error("Failed to load debugger symbols.");
             // NOTE: non-fatal error
