@@ -63,3 +63,6 @@ $zipPath = Join-Path $outputRoot $zipName
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $destRoot '*') -DestinationPath $zipPath -Force
 Write-Output "Created $zipName"
+
+# 7. Open Output folder in explorer
+Start-Process -FilePath "explorer.exe" -ArgumentList $outputRoot
