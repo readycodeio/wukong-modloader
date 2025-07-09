@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using CSharpModBase;
 using CSharpModBase.Input;
+using EmbedCSharpLoader.Managed;
 using IniParser;
 using Mono.Cecil;
 using ReadyM.Loader.Wukong.Bootstrap;
@@ -92,13 +93,11 @@ public class ModLoader
     {
         try
         {
-            var cmd = USystemLibrary.GetCommandLine();
-            const string pattern = """[a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\)*[^<>:"/\\|?*]*""";
-            var pathMatch = Regex.Match(cmd, $"""-mod_folder "?({pattern})"?""");
+            var modFolder = EnvVarHelper.GetEnvironmentVariable("WUKONGMP_MOD_FOLDER");
 
-            if (pathMatch.Success)
+            if (!string.IsNullOrWhiteSpace(modFolder))
             {
-                ModLoaderSettings.ModDirOverride = pathMatch.Groups[1].Value;
+                ModLoaderSettings.ModDirOverride = modFolder;
                 Log.Debug($"Mod folder override: {ModLoaderSettings.ModDir}");
             }
             else
