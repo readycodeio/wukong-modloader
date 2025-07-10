@@ -36,7 +36,7 @@ static bool init_managed_mod_loader()
         log_error("mono_assembly_get_image failed.");
         return false;
     }
-    
+
     auto init_method_desc = mono_method_desc_new(k_entry_point_init_method, true);
 
     if (!init_method_desc)
@@ -44,7 +44,7 @@ static bool init_managed_mod_loader()
         log_error("Invalid method descriptor: mono_method_desc_new failed.");
         return false;
     }
-    
+
     auto init_method = mono_method_desc_search_in_image(init_method_desc, image);
 
     if (!init_method)
@@ -53,7 +53,7 @@ static bool init_managed_mod_loader()
         mono_method_desc_free(init_method_desc);
         return false;
     }
-    
+
     mono_method_desc_free(init_method_desc);
 
     MonoException* exc = nullptr;
@@ -67,7 +67,7 @@ static bool init_managed_mod_loader()
     }
 
     g_already_init_managed = true;
-    
+
     log_debug("CSharpLoader init success.");
     return true;
 }
@@ -117,7 +117,7 @@ static void post_load_assembly_bundles()
         mod_dir / L"Overrides",
         std::filesystem::path(L"CSharpLoader") / "ReadyM.Loader.Wukong.Bootstrap.dll"
     };
-    
+
     if (load_assembly_bundles(dirs))
     {
         log_info("Loaded assembly bundle overrides.");
@@ -132,7 +132,7 @@ static void post_load_assembly_bundles()
 static std::wstring get_version_string()
 {
     auto dll_path = get_base_dir() / L"CSharpLoader" / L"ReadyM.Loader.Wukong.Managed.dll";
-    
+
     DWORD handle = 0;
     DWORD size = GetFileVersionInfoSizeW(dll_path.c_str(), &handle);
 
@@ -183,6 +183,38 @@ static std::wstring get_cmdline()
     return cmdline;
 }
 
+static std::wstring get_environment_variable(const std::wstring& variable)
+{
+    const DWORD initialSize = 512;
+    std::wstring buffer(initialSize, L'\0');
+
+    DWORD size = GetEnvironmentVariableW(variable.c_str(), &buffer[0], static_cast<DWORD>(buffer.size()));
+
+    if (size == 0)
+    {
+        const DWORD error = GetLastError();
+        if (error == ERROR_ENVVAR_NOT_FOUND || (error == 0 && buffer.empty()))
+            return L"";
+
+        log_error(L"GetEnvironmentVariableW failed for '{}': {}", variable, error);
+        return L"";
+    }
+
+    if (size > buffer.size())
+    {
+        buffer.resize(size);
+        size = GetEnvironmentVariableW(variable.c_str(), &buffer[0], size);
+        if (size == 0)
+        {
+            const DWORD error = GetLastError();
+            log_error(L"GetEnvironmentVariableW failed for '{}': {}", variable, error);
+            return L"";
+        }
+    }
+
+    buffer.resize(size); // trim to actual length
+    return buffer;
+}
 
 static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
 {
@@ -212,18 +244,10 @@ static bool init_embed_runtime()
         create_console();
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
-    
-    auto cmdline = get_cmdline();
-    log_debug(L"Command line: {}", cmdline);
 
-    std::wstring path_pattern = LR"RX([a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\)*[^<>:"/\\|?*]*)RX";
-    std::wstring mod_loader_pattern = LR"RX(-mod_folder "?()RX" + path_pattern + LR"RX()"?)RX";
-    auto mod_folder_regex = std::wregex(mod_loader_pattern);
-
-    std::wsmatch m;
-    if (std::regex_search(cmdline, m, mod_folder_regex))
+    auto mod_dir_override = get_environment_variable(L"WUKONGMP_MOD_FOLDER");
+    if (!mod_dir_override.empty())
     {
-        auto mod_dir_override = m.str(1);
         set_mod_dir_override(mod_dir_override);
         log_debug(L"Mod folder override: {}", get_mod_dir().c_str());
     }
@@ -231,12 +255,12 @@ static bool init_embed_runtime()
     {
         log_debug(L"Mod folder: {}", get_mod_dir().c_str());
     }
-    
+
     auto enable_jit_flag = load_enable_jit();
     auto enable_develop_flag = load_enable_develop();
 
     log_info("Intercepting USharp init.");
-    if (!intercept_csharp_loader__load(&post_csharp_loader__load__callback))    
+    if (!intercept_csharp_loader__load(&post_csharp_loader__load__callback))
     {
         log_error("Failed to intercept USharp init.");
         return false;
@@ -247,9 +271,9 @@ static bool init_embed_runtime()
     {
         log_error("Failed to intercept register bundled assemblies.");
     }
-    
+
     auto mod_dir = get_mod_dir();
-    
+
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
     if (enable_develop_flag)
     {
@@ -287,7 +311,7 @@ static void init_dll(HMODULE hModule)
 {
     DisableThreadLibraryCalls(hModule);
     g_hModule = hModule;
-    
+
     init_version_dll();
     init_embed_runtime();
 }
@@ -299,7 +323,7 @@ static void deinit_dll()
 }
 
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
     {
@@ -313,6 +337,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
         // no-op
         break;
     }
-	
+
     return TRUE;
 }

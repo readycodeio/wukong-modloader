@@ -38,7 +38,6 @@ $managedFiles = @(
     "SharpDX.XInput.dll"
 )
 $pakFiles = @(
-    "ScreenshotSaverMod.pak", 
     "WukongMp.pak"
 )
 
