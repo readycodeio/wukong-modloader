@@ -16,10 +16,10 @@ namespace ReadyM.Loader.Wukong.Managed;
 public class ModLoader
 {
     private static ModLoader? _instance;
-    
+
     public static ModLoader Instance
         => _instance ??= new ModLoader();
-    
+
     private class ModMetadata
     {
         public string ModName;
@@ -41,13 +41,13 @@ public class ModLoader
     private List<ModObject> ModsPatched { get; } = new();
     private List<ModObject> ModsInitialized { get; } = new();
     private List<ModObject> ModsLateInitialized { get; } = new();
-    
+
     private InputManager InputManager { get; } = new();
 
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private CancellationToken _cancellationToken;
     private Thread? _lateInitThread;
-    
+
     private Thread? _logLoopThread;
     private Thread? _inputLoopThread;
     private int _reloadCounter;
@@ -56,7 +56,7 @@ public class ModLoader
     {
         _cancellationToken = _cancellationTokenSource.Token;
     }
-    
+
     public void SetupDefault()
     {
         Log.Debug("Setting up ModLoader");
@@ -81,7 +81,7 @@ public class ModLoader
             Log.Error("Error while parsing b1cs.ini");
             Log.Error(e);
         }
-        
+
         ModLoaderSettings.UseDevelop = developValue == "1" || developValue == "2";
         ModLoaderSettings.UseReload = developValue == "2";
 
@@ -93,9 +93,9 @@ public class ModLoader
     {
         try
         {
-            var modFolder = EnvVarHelper.GetEnvironmentVariable("WUKONGMP_MOD_FOLDER");
+            var ipcHandshakeFile = IpcHelpers.ReadIpcHandshakeFile();
 
-            if (!string.IsNullOrWhiteSpace(modFolder))
+            if (ipcHandshakeFile.TryGetValue("MOD_FOLDER", out var modFolder))
             {
                 ModLoaderSettings.ModDirOverride = modFolder;
                 Log.Debug($"Mod folder override: {ModLoaderSettings.ModDir}");
@@ -118,7 +118,7 @@ public class ModLoader
         {
             Log.Debug($"Already loaded: {asm.FullName}");
         }
-        
+
         Mods.Clear();
         ModsInitialized.Clear();
         if (!Directory.Exists(ModLoaderSettings.ModDir))
@@ -223,7 +223,7 @@ public class ModLoader
             var dir = d.Key;
             var modMeta = d.Value;
             var modName = modMeta.ModName;
-            
+
             Log.Debug($"Processing {modName}");
 
             if (modMeta.Disabled)
@@ -231,7 +231,7 @@ public class ModLoader
                 Log.Debug("Mod disabled");
                 continue;
             }
-            
+
             var resolver = new DefaultAssemblyResolver();
             resolver.AddSearchDirectory(dir);
             resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.ModDir, "Common"));
@@ -273,7 +273,7 @@ public class ModLoader
                         renameHelper,
                         resolver
                     );
-                    
+
                     Log.Debug($"Copied {asmPath} -> {copiedAsmPath}");
                     if (asmSymbols != null)
                         Log.Debug($"Copied {asmSymbols} -> {copiedAsmSymbols}");
@@ -298,7 +298,7 @@ public class ModLoader
 
             if (modMeta.Disabled)
                 continue;
-            
+
             if (modMeta.LoadAsmPath == null)
             {
                 Log.Debug($"No assembly to load for: {modName}");
@@ -330,14 +330,14 @@ public class ModLoader
                             Log.Error($"Failed to create instance of {type.FullName}");
                             continue;
                         }
-                        
+
                         var mod = modUntyped as ICSharpMod;
                         if (mod == null)
                         {
                             Log.Error($"Instance of {type.FullName} is not ICSharpMod");
                             continue;
                         }
-                        
+
                         var modObj = new ModObject()
                         {
                             Meta = modMeta,
@@ -354,7 +354,7 @@ public class ModLoader
                 Log.Error($"Loading {modMeta.LoadAsmPath} failed:");
                 Log.Error(ex);
             }
-            
+
             ModLoaderSettings.LoadingModName = null;
         }
     }
@@ -394,11 +394,11 @@ public class ModLoader
                 Log.Error($"Initializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
                 Log.Error(ex);
             }
-            
+
             ModLoaderSettings.LoadingModName = null;
         }
     }
-    
+
     public void LateInitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
     {
         foreach (var modObj in Mods)
@@ -422,7 +422,7 @@ public class ModLoader
                     ModsLateInitialized.Add(modObj);
                     Log.Debug($"Late Initialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
                 }
-                
+
                 if (reload && modObj.ModEx != null)
                 {
                     reloadContexts!.TryGetValue(modObj.ModEx.Name, out var reloadContext);
@@ -435,7 +435,7 @@ public class ModLoader
                 Log.Error($"Initializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
                 Log.Error(ex);
             }
-            
+
             ModLoaderSettings.LoadingModName = null;
         }
     }
@@ -443,7 +443,7 @@ public class ModLoader
     public void DeInitMods()
     {
         _lateInitThread?.Join();
-        
+
         var modsInitialized = new List<ModObject>(ModsInitialized);
         modsInitialized.Reverse();
         foreach (var modObj in modsInitialized)
@@ -461,7 +461,7 @@ public class ModLoader
                 Log.Error($"Deinitializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
                 Log.Error(ex);
             }
-            
+
             ModLoaderSettings.LoadingModName = null;
         }
     }
@@ -487,24 +487,24 @@ public class ModLoader
                 Log.Error(ex);
             }
         }
-        
+
         return result;
     }
 
     public void ReloadMods()
     {
         _lateInitThread?.Join();
-        
+
         Log.Debug("Fetching reload contexts");
         var reloadContexts = GetReloadContexts();
-        
+
         Log.Debug("Reloading mods");
         InputManager.Clear();
-        
+
         DeInitMods();
-        
+
         LoadMods();
-        
+
         InitMods();
         LateInitMods(true, reloadContexts);
     }
@@ -529,7 +529,7 @@ public class ModLoader
         };
         _lateInitThread.Start();
     }
-    
+
     public void StartLogLoop()
     {
         _logLoopThread = new Thread(LogLoop)
@@ -573,11 +573,11 @@ public class ModLoader
     {
         Log.Debug("Cancelling in progress operations...");
         _cancellationTokenSource.Cancel();
-        
+
         _lateInitThread?.Join();
         _logLoopThread?.Join();
         _inputLoopThread?.Join();
-        
+
         Log.Debug("All operations cancelled.");
     }
 }
