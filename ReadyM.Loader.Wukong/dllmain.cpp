@@ -1,4 +1,10 @@
+#include <unordered_map>
+#include <fstream>
 #include <iterator>
+#include <shlobj.h>
+#include <shobjidl.h>
+#include <combaseapi.h>
+#include <psapi.h>
 #include <windows.h>
 
 #include "Config/debugger.h"
@@ -233,6 +239,92 @@ static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
     return result;
 }
 
+std::wstring GetHandshakeFilePath()
+{
+    wchar_t* localAppData = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &localAppData)))
+    {
+        std::wstring path = localAppData;
+        CoTaskMemFree(localAppData);
+        return path + L"\\ReadyM.Launcher\\wukong_handshake.env";
+    }
+    return L"";
+}
+
+bool IsLauncherProcessStillRunning(DWORD pid, const std::wstring& expectedImageName)
+{
+    HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    if (!hProc)
+        return false;
+
+    wchar_t exePath[MAX_PATH];
+    DWORD len = GetModuleFileNameEx(hProc, NULL, exePath, MAX_PATH);
+    CloseHandle(hProc);
+
+    if (len == 0)
+        return false;
+
+    // You can do stricter matching here if needed
+    std::wstring actual = exePath;
+    size_t pos = actual.find_last_of(L"\\/");
+    std::wstring filename = (pos != std::wstring::npos) ? actual.substr(pos + 1) : actual;
+
+    return _wcsicmp(filename.c_str(), expectedImageName.c_str()) == 0;
+}
+
+std::unordered_map<std::string, std::string> ParseEnvFile(const std::wstring& path)
+{
+    std::unordered_map<std::string, std::string> map;
+    std::wifstream file(path);
+    if (!file.is_open()) return map;
+
+    std::wstring line;
+    while (std::getline(file, line))
+    {
+        auto pos = line.find(L'=');
+        if (pos == std::wstring::npos) continue;
+
+        std::string key(line.begin(), line.begin() + pos);
+        std::string value(line.begin() + pos + 1, line.end());
+        map[key] = value;
+    }
+
+    return map;
+}
+
+std::optional<std::wstring> TryGetModFolderOverride()
+{
+    auto path = GetHandshakeFilePath();
+    auto env = ParseEnvFile(path);
+
+    // print the env map for debugging
+    log_debug(L"Parsed environment variables from {}:", path);
+    for (const auto& [key, value] : env)
+    {
+        log_debug("  {}: {}", key, value);
+    }
+
+    if (env.contains("LAUNCHER_PID"))
+    {
+        DWORD pid = std::stoul(env["LAUNCHER_PID"]);
+        if (!IsLauncherProcessStillRunning(pid, L"ReadyM.Launcher.exe"))
+        {
+            log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
+            return std::nullopt;
+        }
+    }
+
+    log_debug(L"Launcher process is running as expected.");
+
+    if (env.contains("MOD_FOLDER"))
+    {
+        std::wstring wmodfolder(env["MOD_FOLDER"].begin(), env["MOD_FOLDER"].end());
+        if (std::filesystem::exists(wmodfolder))
+            return wmodfolder;
+    }
+
+    return std::nullopt;
+}
 
 static bool init_embed_runtime()
 {
@@ -244,10 +336,11 @@ static bool init_embed_runtime()
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
 
-    auto mod_dir_override = get_environment_variable(L"WUKONGMP_MOD_FOLDER");
-    if (!mod_dir_override.empty())
+    auto mod_dir_override = TryGetModFolderOverride();
+
+    if (mod_dir_override.has_value())
     {
-        set_mod_dir_override(mod_dir_override);
+        set_mod_dir_override(mod_dir_override.value());
         log_debug(L"Mod folder override: {}", get_mod_dir().c_str());
     }
     else
