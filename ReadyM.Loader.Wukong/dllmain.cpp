@@ -1,5 +1,4 @@
 #include <iterator>
-#include <regex>
 #include <windows.h>
 
 #include "Config/debugger.h"

@@ -44,7 +44,7 @@ void*** get_bundles_ptr()
             "4c 2b c0 "
             "0f 1f 84 00 00 00 00 00"
         );
-        
+
         if (!bundles_user_func)
         {
             log_error_missing_ptr("bundles_user_func");
@@ -53,7 +53,7 @@ void*** get_bundles_ptr()
         }
 
         log_debug_ptr("bundles_user_func", bundles_user_func);
-        
+
         uint32_t bundles_offset = *reinterpret_cast<uint32_t*>(bundles_user_func + 3);
         g_bundles_ptr = reinterpret_cast<void***>(bundles_user_func + 7 + bundles_offset);
 
@@ -77,7 +77,7 @@ MonoBundledAssembly** get_mono_register_bundled_assemblies()
 }
 
 
-bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies)
+bool mono_register_bundled_assemblies(MonoBundledAssembly** assemblies)
 {
     auto bundles_ptr = get_bundles_ptr();
     if (!bundles_ptr)
@@ -101,12 +101,13 @@ void* get_mono_register_bundled_assemblies_ptr()
             log_error("Cannot get mono_register_bundled_assemblies_ptr due to missing bundles_ptr.");
             return nullptr;
         }
-    
+
         uint64_t mono_register_bundled_assemblies = signature(
             "48 89 0d "
             "? ? ? ? "
             "c3",
-            [&](const uint8_t* ptr) {
+            [&](const uint8_t* ptr)
+            {
                 int32_t bundles_offset = static_cast<int32_t>(bundles_ptr - (reinterpret_cast<uint64_t>(ptr) + 7));
                 int32_t candidate_offset = *reinterpret_cast<const int32_t*>(ptr + 3);
                 return candidate_offset == bundles_offset;
@@ -129,11 +130,11 @@ void* get_mono_register_bundled_assemblies_ptr()
 
 
 extern "C" void*** g_bundles_ptr_exported;
-extern "C" void(*g_bundled_assemblies_callback)();
+extern "C" void (*g_bundled_assemblies_callback)();
 extern "C" void bundled_assemblies_callback_trampoline();
 
 
-bool intercept_register_bundled_assemblies(void(*callback)())
+bool intercept_register_bundled_assemblies(void (*callback)())
 {
     auto mono_register_bundled_assemblies_ptr = reinterpret_cast<uint64_t>(get_mono_register_bundled_assemblies_ptr());
     if (!mono_register_bundled_assemblies_ptr)
@@ -177,7 +178,7 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
     {
         log_debug(L"Processing: {}", path.wstring());
         std::ifstream dll_file(path, std::ios::in | std::ios::binary | std::ios::ate);
-        
+
         if (dll_file)
         {
             log_debug(L"Loading DLL override: {}", path.wstring());
@@ -211,7 +212,7 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
             {
                 auto assembly_name_cstr = new char[assembly_name.size() + 1];
                 strcpy_s(assembly_name_cstr, assembly_name.size() + 1, assembly_name.c_str());
-                
+
                 log_debug("Appending new bundle: {}", assembly_name);
                 auto new_bundle = glib_new0<MonoBundledAssembly>();
                 new_bundle->data = reinterpret_cast<const unsigned char*>(buffer);
@@ -221,12 +222,12 @@ bool load_assembly_bundles(std::vector<std::filesystem::path> dirs)
             }
         }
     };
-    
+
     for (auto& dir : dirs)
     {
         auto full_dir = get_base_dir() / dir;
         log_debug(L"Full dir: {}", full_dir.wstring());
-    
+
         if (!std::filesystem::exists(full_dir))
         {
             log_debug(L"Directory does not exist: {}", full_dir.wstring());
@@ -280,7 +281,7 @@ void* get_mono_assembly_request_open_ptr()
         auto mono_assembly_request_open = signature(
             "40 55 41 56 41 57 48 8d ac 24 40 ff ff ff 48 81 ec c0 01 00 00 48 8b 05 ? ? ? ? 48 33 c4 48 89 85 90 00 00 00 48 89 4d 90"
         );
-        
+
         if (!mono_assembly_request_open)
         {
             log_error_missing_ptr("mono_assembly_request_open");
@@ -306,12 +307,12 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
     }
 
     auto full_filename = get_base_dir() / filename;
-    
+
     char full_filenameA[MAX_PATH];
     // convert to utf-8 to support Chinese path
     WideCharToMultiByte(CP_UTF8, 0, full_filename.c_str(), MAX_PATH, full_filenameA, MAX_PATH, nullptr, nullptr);
     log_info(L"Loading CSharpManager from: {}", full_filename.c_str());
-    
+
     MonoAssemblyOpenRequest open_request{};
     auto status = MONO_IMAGE_OK;
     void* assembly = func(full_filenameA, &open_request, &status);
@@ -321,13 +322,13 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
         log_error("mono_assembly_request_open status failed.");
         return nullptr;
     }
-    
+
     if (status != MONO_IMAGE_OK)
     {
         log_error("mono_assembly_request_open failed.");
         return nullptr;
     }
-    
+
     return assembly;
 }
 
@@ -336,7 +337,7 @@ void* get_mono_assembly_get_image_ptr()
 {
     if (!g_mono_assembly_get_image_ptr.has_value())
     {
-        auto mono_assembly_get_image = signature(
+        auto mono_assembly_get_image_sig_steam = signature(
             "40 53 "
             "48 83 ec 30 "
             "8b 1d ? ? ? ? "
@@ -348,16 +349,35 @@ void* get_mono_assembly_get_image_ptr()
             "48 8d 05 ? ? ? ? "
             "48 89 44 24 28"
         );
-        
-        if (!mono_assembly_get_image)
+
+        if (mono_assembly_get_image_sig_steam)
         {
-            log_error_missing_ptr("mono_assembly_get_image");
-            g_mono_assembly_get_image_ptr = nullptr;
-            return nullptr;
+            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig_steam);
+            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig_steam);
+            return g_mono_assembly_get_image_ptr.value();
         }
 
-        log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image);
-        g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image);
+        auto mono_assembly_get_image_sig_epic = signature(
+            "40 53 " // push rbx
+            "48 83 ec 30 " // sub rsp, 30h
+            "48 8d 44 24 20 " // lea rax, [rsp + 20h]
+            "48 89 cb " // mov rbx, rcx
+            "48 89 44 24 20 " // mov [rsp + 20h], rax
+            "b8 ? ? ? ? " // mov eax ???
+            "2b 05 ? ? ? ? " // sub eax, [rip + ?] // relative offset
+            "48 8d 0c 04 " // lea rcx, [rsp + rax] // load address of the image
+        );
+
+        if (mono_assembly_get_image_sig_epic)
+        {
+            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig_epic);
+            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig_epic);
+            return g_mono_assembly_get_image_ptr.value();
+        }
+
+        log_error_missing_ptr("48 8d 04 1c");
+        g_mono_assembly_get_image_ptr = nullptr;
+        return nullptr;
     }
 
     return g_mono_assembly_get_image_ptr.value();
