@@ -81,7 +81,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
         var record = new
         {
             TimeGenerated = DateTime.UtcNow.ToString("o"),
-            Level = logEntry.LogLevel,
+            Level = logEntry.LogLevel.ToString(),
             MessageTemplate = messageTemplate ?? "",
             Properties = props,
             Session = sessionId,
