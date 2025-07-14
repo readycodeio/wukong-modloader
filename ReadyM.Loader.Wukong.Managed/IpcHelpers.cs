@@ -1,8 +1,8 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using ReadyM.Loader.Wukong.Bootstrap;
 
 namespace EmbedCSharpLoader.Managed;
 
@@ -28,7 +28,7 @@ public class IpcHelper(ILogger logger)
             if (error == 0 && buffer.Length == 0)
                 return null;
 
-            throw new System.ComponentModel.Win32Exception(error);
+            throw new Win32Exception(error);
         }
 
         if (size > buffer.Capacity)

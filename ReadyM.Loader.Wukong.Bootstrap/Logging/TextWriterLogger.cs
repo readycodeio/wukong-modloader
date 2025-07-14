@@ -13,7 +13,7 @@ internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter
     public bool IsEnabled(LogLevel logLevel)
         => true;
     
-    private readonly StringWriter _stringWriter = new StringWriter();
+    private readonly StringWriter _stringWriter = new();
 
     public void Log<TState>(
         LogLevel logLevel,

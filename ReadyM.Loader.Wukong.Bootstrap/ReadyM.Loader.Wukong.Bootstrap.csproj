@@ -9,7 +9,7 @@
         <LangVersion>latest</LangVersion>
         <DebugType>portable</DebugType>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <RootNamespace>EmbedCSharpLoader.Bootstrap</RootNamespace>
+        <RootNamespace>ReadyM.Loader.Wukong.Bootstrap</RootNamespace>
         <InvariantGlobalization>true</InvariantGlobalization>
     </PropertyGroup>
 

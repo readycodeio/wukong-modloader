@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
