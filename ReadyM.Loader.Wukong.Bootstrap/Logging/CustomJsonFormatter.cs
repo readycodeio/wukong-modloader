@@ -15,7 +15,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
         WriteIndented = false,
         Converters =
         {
-            new FTextConverterFactory()
+            new FTextConverter()
         }
     };
 

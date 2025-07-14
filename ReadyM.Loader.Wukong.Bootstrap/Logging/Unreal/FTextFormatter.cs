@@ -16,21 +16,3 @@ public class FTextConverter : JsonConverter<FText>
         writer.WriteStringValue(value.ToString());
     }
 }
-
-public class FTextConverterFactory : JsonConverterFactory
-{
-    public override bool CanConvert(Type typeToConvert)
-    {
-        return typeToConvert == typeof(FText);
-    }
-
-    public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (CanConvert(typeToConvert))
-        {
-            return new FTextConverter();
-        }
-
-        return null;
-    }
-}
