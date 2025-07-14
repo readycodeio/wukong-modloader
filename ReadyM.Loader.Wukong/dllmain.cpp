@@ -1,3 +1,4 @@
+#include <codecvt>
 #include <unordered_map>
 #include <fstream>
 #include <iterator>
@@ -239,6 +240,14 @@ static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
     return result;
 }
 
+std::wstring Utf8ToWide(const std::string& str)
+{
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    std::wstring wstr(size_needed - 1, 0); // -1 to exclude null terminator
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstr[0], size_needed);
+    return wstr;
+}
+
 std::wstring GetHandshakeFilePath()
 {
     wchar_t* localAppData = nullptr;
@@ -275,17 +284,22 @@ bool IsLauncherProcessStillRunning(DWORD pid, const std::wstring& expectedImageN
 std::unordered_map<std::wstring, std::wstring> ParseEnvFile(const std::wstring& path)
 {
     std::unordered_map<std::wstring, std::wstring> map;
-    std::wifstream file(path);
+
+    std::ifstream file(path); // open as narrow stream (UTF-8)
     if (!file.is_open()) return map;
 
-    std::wstring line;
+    std::string line;
     while (std::getline(file, line))
     {
-        auto pos = line.find(L'=');
-        if (pos == std::wstring::npos) continue;
+        auto pos = line.find('=');
+        if (pos == std::string::npos) continue;
 
-        std::wstring key(line.begin(), line.begin() + pos);
-        std::wstring value(line.begin() + pos + 1, line.end());
+        std::string keyStr = line.substr(0, pos);
+        std::string valueStr = line.substr(pos + 1);
+
+        std::wstring key = Utf8ToWide(keyStr);
+        std::wstring value = Utf8ToWide(valueStr);
+
         map[key] = value;
     }
 
