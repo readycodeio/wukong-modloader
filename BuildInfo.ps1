@@ -16,20 +16,16 @@ $pakDestDir = "Content/Paks/LogicMods"
 
 # Define the files to copy
 $nativeFiles = @(
-    "version.dll",
-    "version.pdb"
+    "version.dll"
 )
 $bootstrapFiles = @(
-    "ReadyM.Loader.Wukong.Bootstrap.dll",
-    "ReadyM.Loader.Wukong.Bootstrap.pdb"
+    "ReadyM.Loader.Wukong.Bootstrap.dll"
 )
 $managedFiles = @(
     "0Harmony.dll",
     "ReadyM.Loader.Wukong.Managed.dll",
-    "ReadyM.Loader.Wukong.Managed.pdb",
     "INIFileParser.dll",
     "CSharpModBase.dll",
-    "CSharpModBase.pdb",
     "Mono.Cecil.dll",
     "Mono.Cecil.Mdb.dll",
     "Mono.Cecil.Pdb.dll", 

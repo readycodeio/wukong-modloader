@@ -1,3 +1,4 @@
+#include <codecvt>
 #include <unordered_map>
 #include <fstream>
 #include <iterator>
@@ -239,6 +240,14 @@ static std::vector<std::wstring> parse_cmdline(std::wstring cmdline)
     return result;
 }
 
+std::wstring Utf8ToWide(const std::string& str)
+{
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    std::wstring wstr(size_needed - 1, 0); // -1 to exclude null terminator
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstr[0], size_needed);
+    return wstr;
+}
+
 std::wstring GetHandshakeFilePath()
 {
     wchar_t* localAppData = nullptr;
@@ -272,20 +281,25 @@ bool IsLauncherProcessStillRunning(DWORD pid, const std::wstring& expectedImageN
     return _wcsicmp(filename.c_str(), expectedImageName.c_str()) == 0;
 }
 
-std::unordered_map<std::string, std::string> ParseEnvFile(const std::wstring& path)
+std::unordered_map<std::wstring, std::wstring> ParseEnvFile(const std::wstring& path)
 {
-    std::unordered_map<std::string, std::string> map;
-    std::wifstream file(path);
+    std::unordered_map<std::wstring, std::wstring> map;
+
+    std::ifstream file(path); // open as narrow stream (UTF-8)
     if (!file.is_open()) return map;
 
-    std::wstring line;
+    std::string line;
     while (std::getline(file, line))
     {
-        auto pos = line.find(L'=');
-        if (pos == std::wstring::npos) continue;
+        auto pos = line.find('=');
+        if (pos == std::string::npos) continue;
 
-        std::string key(line.begin(), line.begin() + pos);
-        std::string value(line.begin() + pos + 1, line.end());
+        std::string keyStr = line.substr(0, pos);
+        std::string valueStr = line.substr(pos + 1);
+
+        std::wstring key = Utf8ToWide(keyStr);
+        std::wstring value = Utf8ToWide(valueStr);
+
         map[key] = value;
     }
 
@@ -301,12 +315,12 @@ std::optional<std::wstring> TryGetModFolderOverride()
     log_debug(L"Parsed environment variables from {}:", path);
     for (const auto& [key, value] : env)
     {
-        log_debug("  {}: {}", key, value);
+        log_debug(L"  {}: {}", key, value);
     }
 
-    if (env.contains("LAUNCHER_PID"))
+    if (env.contains(L"LAUNCHER_PID"))
     {
-        DWORD pid = std::stoul(env["LAUNCHER_PID"]);
+        DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
         if (!IsLauncherProcessStillRunning(pid, L"ReadyM.Launcher.exe"))
         {
             log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
@@ -316,9 +330,9 @@ std::optional<std::wstring> TryGetModFolderOverride()
 
     log_debug(L"Launcher process is running as expected.");
 
-    if (env.contains("MOD_FOLDER"))
+    if (env.contains(L"MOD_FOLDER"))
     {
-        std::wstring wmodfolder(env["MOD_FOLDER"].begin(), env["MOD_FOLDER"].end());
+        std::wstring wmodfolder(env[L"MOD_FOLDER"].begin(), env[L"MOD_FOLDER"].end());
         if (std::filesystem::exists(wmodfolder))
             return wmodfolder;
     }
