@@ -91,7 +91,7 @@ static bool init_managed_mod_loader()
         nullptr
     };
     
-    mono_runtime_invoke(init_logging_method, nullptr, params, nullptr);
+    mono_runtime_invoke(init_logging_method, nullptr, params, exc_obj);
     
     if (exc != nullptr)
     {
@@ -103,6 +103,8 @@ static bool init_managed_mod_loader()
         log_error(L"{}", exc_msg);
         return false;
     }
+
+    exc = nullptr;
 
     mono_runtime_invoke(init_method, nullptr, nullptr, exc_obj);
 
