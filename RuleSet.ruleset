@@ -1,0 +1,10 @@
+﻿<RuleSet Name="Global Rules" ToolsVersion="12.0">
+    <Rules AnalyzerId="System.Runtime.Analyzers"
+           RuleNamespace="System.Runtime.Analyzers">
+        <Rule Id="CA2254" Action="Error" />
+    </Rules>
+    <Rules AnalyzerId="System.Runtime.InteropServices.Analyzers"
+           RuleNamespace="System.Runtime.InteropService.Analyzers">
+        <Rule Id="CA2254" Action="Error" />
+    </Rules>
+</RuleSet>

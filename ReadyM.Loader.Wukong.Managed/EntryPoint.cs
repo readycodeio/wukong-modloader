@@ -1,41 +1,53 @@
-﻿using ReadyM.Loader.Wukong.Bootstrap;
-using UnrealEngine.Runtime;
+﻿using EmbedCSharpLoader.Managed;
+using Microsoft.Extensions.Logging;
+using ReadyM.Loader.Wukong.Bootstrap;
+using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
 // ReSharper disable once UnusedType.Global
 public static class EntryPoint
 {
+    private static ILoggerFactory _loggerFactory = null!;
+    private static ILogger _logger = null!;
+    
+    private static ManagedLoader _managedLoader = null!;
+    
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
-        Log.Debug("Managed entry point init");
+        _loggerFactory = Log.Provider.CreateLoggerFactory(true, true);
+        _logger = _loggerFactory.CreateLogger("ManagedLoader");
+        
+        _logger.LogDebug("Managed entry point init");
 
-        var loader = ModLoader.Instance;
+        var ipcHelper = new IpcHelper(_logger);
+        _managedLoader = new ManagedLoader(_logger, ipcHelper);
         
-        loader.SetupDefault();
-        loader.StartLogLoop();
-        loader.StartInputLoop();
-        
-        loader.LoadMods();
-        loader.InitMods();
-        loader.StartLateInitMods();
+        _managedLoader.SetupDefault();
 
-        FCoreDelegates.OnExit.Bind(DeInit);
+        var legacyFactory = Log.Provider.CreateLoggerFactory(Settings.UseDevelop, false);
+        var legacyLogger = legacyFactory.CreateLogger("");
+        LegacyLog.SetLogger(legacyLogger);
         
-        Log.Debug("Managed entry init complete");
+        _managedLoader.StartLogLoop();
+        _managedLoader.StartInputLoop();
+        
+        _managedLoader.LoadMods();
+        _managedLoader.InitMods();
+        _managedLoader.StartLateInitMods();
+
+        _logger.LogDebug("Managed entry init complete");
     }
 
     // ReSharper disable once UnusedMember.Global
     public static void DeInit()
     {
-        Log.Debug("Managed entry point deinit");
+        _logger.LogDebug("Managed entry point deinit");
 
-        var loader = ModLoader.Instance;
-
-        loader.Cancel();
-        loader.DeInitMods();
+        _managedLoader.Cancel();
+        _managedLoader.DeInitMods();
         
-        Log.Debug("Managed entry deinit complete");
+        _logger.LogDebug("Managed entry deinit complete");
     }
 }

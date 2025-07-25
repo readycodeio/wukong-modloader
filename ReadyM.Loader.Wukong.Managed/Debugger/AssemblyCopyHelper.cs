@@ -1,10 +1,10 @@
-﻿using Mono.Cecil;
+﻿using Microsoft.Extensions.Logging;
+using Mono.Cecil;
 using Mono.Cecil.Cil;
-using ReadyM.Loader.Wukong.Bootstrap;
 
 namespace ReadyM.Loader.Wukong.Managed.Debugger;
 
-internal class AssemblyCopyHelper
+internal class AssemblyCopyHelper(ILogger logger)
 {
     private string? _tempName;
     private string? _tempPath;
@@ -142,7 +142,7 @@ internal class AssemblyCopyHelper
 
             asmDef.Dispose();
 
-            Log.Debug($"Processing {assemblyPath}");
+            logger.LogDebug("Processing {Path}", assemblyPath);
             asmDef = AssemblyDefinition.ReadAssembly(tempAssemblyPath, new ReaderParameters()
             {
                 ReadSymbols = hasSymbols,
@@ -170,8 +170,7 @@ internal class AssemblyCopyHelper
         }
         catch (Exception ex)
         {
-            Log.Error("Error creating assembly clone:");
-            Log.Error(ex);
+            logger.LogError(ex, "Error creating assembly clone:");
             throw;
         }
     }

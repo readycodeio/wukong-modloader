@@ -138,7 +138,7 @@ bool can_load_symbols()
 }
 
 
-bool load_debugger_symbols(const std::filesystem::path& dir)
+bool load_debugger_symbols(const std::vector<std::filesystem::path>& dirs)
 {
     if (!can_load_symbols())
     {
@@ -148,33 +148,51 @@ bool load_debugger_symbols(const std::filesystem::path& dir)
     
     log_debug("Loading symbols for bundled assemblies");
 
-    auto full_dir = get_base_dir() / dir;
-    
-    std::error_code ec;
-    const std::filesystem::directory_iterator full_dir_end;
-    for (auto it = std::filesystem::directory_iterator(full_dir, ec); !ec && it != full_dir_end; it.increment(ec))
+    auto process_symbols = [](const std::filesystem::path& path)
     {
-        if (it->is_regular_file(ec) && it->path().extension() == ".pdb")
-        {
-            std::ifstream pdb_file(it->path(), std::ios::in | std::ios::binary | std::ios::ate);
+        std::ifstream pdb_file(path, std::ios::in | std::ios::binary | std::ios::ate);
             
-            if (pdb_file)
-            {
-                log_debug(L"Loading PDB file: {}", it->path().wstring());
-                auto size = pdb_file.tellg();
-                log_debug("File size is: {} bytes", static_cast<size_t>(size));
-                pdb_file.seekg(0, std::ios::beg);
-                auto buffer = new char[size];
-                pdb_file.read(buffer, size);
+        if (pdb_file)
+        {
+            log_debug(L"Loading PDB file: {}", path.wstring());
+            auto size = pdb_file.tellg();
+            log_debug("File size is: {} bytes", static_cast<size_t>(size));
+            pdb_file.seekg(0, std::ios::beg);
+            auto buffer = new char[size];
+            pdb_file.read(buffer, size);
 
-                auto assembly_name = it->path().stem().string() + ".dll";
-                auto assembly_name_cstr = new char[assembly_name.size() + 1];
-                strcpy_s(assembly_name_cstr, assembly_name.size() + 1, assembly_name.c_str());
+            auto assembly_name = path.stem().string() + ".dll";
+            auto assembly_name_cstr = new char[assembly_name.size() + 1];
+            strcpy_s(assembly_name_cstr, assembly_name.size() + 1, assembly_name.c_str());
                 
-                mono_register_symfile_for_assembly(assembly_name_cstr, reinterpret_cast<const uint8_t*>(buffer), (int)size);
+            mono_register_symfile_for_assembly(assembly_name_cstr, reinterpret_cast<const uint8_t*>(buffer), (int)size);
+        }
+    };
+
+    for (auto& dir : dirs)
+    {
+        auto full_dir = get_base_dir() / dir;
+        
+        if (std::filesystem::is_directory(full_dir))
+        {
+            std::error_code ec;
+            const std::filesystem::directory_iterator full_dir_end;
+            for (auto it = std::filesystem::directory_iterator(full_dir, ec); !ec && it != full_dir_end; it.increment(ec))
+            {
+                if (it->is_regular_file(ec) && it->path().extension() == ".pdb")
+                {
+                    process_symbols(it->path());
+                }
+            }
+        }
+        else
+        {
+            if (std::filesystem::is_regular_file(full_dir) && full_dir.extension() == ".pdb")
+            {
+                process_symbols(full_dir);
             }
         }
     }
-
+    
     return true;
 }

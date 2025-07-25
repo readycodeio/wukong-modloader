@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpModBase", "CSharpModB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadyM.Loader.Wukong.Bootstrap", "ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj", "{2C4D4996-ABFD-4083-9E65-BB162096FEBE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpModBaseV2", "CSharpModBaseV2\CSharpModBaseV2.csproj", "{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -48,5 +50,13 @@ Global
 		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|Win32.Build.0 = Release|Any CPU
 		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|x64.ActiveCfg = Release|Any CPU
 		{2C4D4996-ABFD-4083-9E65-BB162096FEBE}.Release|x64.Build.0 = Release|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Debug|Win32.Build.0 = Debug|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Debug|x64.Build.0 = Debug|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Release|Win32.ActiveCfg = Release|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Release|Win32.Build.0 = Release|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Release|x64.ActiveCfg = Release|Any CPU
+		{F36F1076-23E4-42C9-9965-E0DD8ECC00C7}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

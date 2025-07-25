@@ -186,6 +186,7 @@
     <ClCompile Include="Config\config.cpp" />
     <ClCompile Include="Config\debugger.cpp" />
     <ClCompile Include="Config\flags.cpp" />
+    <ClCompile Include="Config\logger-config.cpp" />
     <ClCompile Include="Config\path.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EntryDll\version_dll.cpp" />
@@ -211,6 +212,7 @@
     <ClInclude Include="Config\config.h" />
     <ClInclude Include="Config\debugger.h" />
     <ClInclude Include="Config\flags.h" />
+    <ClInclude Include="Config\logger-config.h" />
     <ClInclude Include="Config\path.h" />
     <ClInclude Include="EntryDll\version_dll.h" />
     <ClInclude Include="Logger\logger.h" />

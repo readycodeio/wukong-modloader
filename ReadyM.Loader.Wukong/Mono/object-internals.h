@@ -68,3 +68,17 @@ struct MonoException
     void *native_trace_ips;
     int32_t caught_in_unmanaged;
 };
+
+
+struct MonoString {
+    MonoObject object;
+    int32_t length;
+    wchar_t chars[1];
+};
+
+
+static inline wchar_t*
+mono_string_chars_internal(MonoString *s)
+{
+    return s->chars;
+}

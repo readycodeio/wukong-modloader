@@ -1,25 +1,19 @@
-using System.Diagnostics;
 using System.Reflection;
-using System.Text.RegularExpressions;
+using CSharpManager;
 using CSharpModBase;
 using CSharpModBase.Input;
 using EmbedCSharpLoader.Managed;
 using IniParser;
+using Microsoft.Extensions.Logging;
 using Mono.Cecil;
 using ReadyM.Loader.Wukong.Bootstrap;
 using ReadyM.Loader.Wukong.Managed.Debugger;
-using UnrealEngine.Engine;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
-public class ModLoader
+public class ManagedLoader
 {
-    private static ModLoader? _instance;
-
-    public static ModLoader Instance
-        => _instance ??= new ModLoader();
-
     private class ModMetadata
     {
         public string ModName;
@@ -34,15 +28,16 @@ public class ModLoader
         public ModMetadata Meta;
         public ICSharpMod Mod;
         public ICSharpModEx? ModEx;
-        public ICSharpModEx_V2? ModExV2;
+        public ICSharpModExV2? ModExV2;
     }
 
-    private List<ModObject> Mods { get; } = new();
-    private List<ModObject> ModsPatched { get; } = new();
-    private List<ModObject> ModsInitialized { get; } = new();
-    private List<ModObject> ModsLateInitialized { get; } = new();
-
-    private InputManager InputManager { get; } = new();
+    private readonly ILogger _logger;
+    
+    private List<ModObject> _mods { get; } = new();
+    private List<ModObject> _modsInitialized { get; } = new();
+    private List<ModObject> _modsLateInitialized { get; } = new();
+    
+    private InputManager _inputManager { get; } = new();
 
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private CancellationToken _cancellationToken;
@@ -51,15 +46,18 @@ public class ModLoader
     private Thread? _logLoopThread;
     private Thread? _inputLoopThread;
     private int _reloadCounter;
+    private readonly IpcHelper _ipcHelper;
 
-    private ModLoader()
+    public ManagedLoader(ILogger logger, IpcHelper ipcHelper)
     {
+        _logger = logger;
+        _ipcHelper = ipcHelper;
         _cancellationToken = _cancellationTokenSource.Token;
     }
 
     public void SetupDefault()
     {
-        Log.Debug("Setting up ModLoader");
+        _logger.LogDebug("Setting up ModLoader");
 
         SetupModeFromIniConfig();
         SetupModFolderOverride();
@@ -70,44 +68,43 @@ public class ModLoader
         var developValue = "0";
         try
         {
-            var iniPath = Path.Combine(ModLoaderSettings.LoaderDir, "b1cs.ini");
+            var iniPath = Path.Combine(Settings.LoaderDir, "b1cs.ini");
             var fullIniPath = Path.GetFullPath(iniPath);
             var iniParser = new FileIniDataParser();
             var iniData = iniParser.ReadFile(fullIniPath);
             developValue = iniData["Settings"]?.GetKeyData("Develop")?.Value ?? "0";
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error("Error while parsing b1cs.ini");
-            Log.Error(e);
+            _logger.LogError(ex, "Error while parsing b1cs.ini");
         }
+        
+        Settings.UseDevelop = developValue == "1" || developValue == "2";
+        Settings.UseReload = developValue == "2";
 
-        ModLoaderSettings.UseDevelop = developValue == "1" || developValue == "2";
-        ModLoaderSettings.UseReload = developValue == "2";
-
-        Log.Debug($"Develop Mode: {ModLoaderSettings.UseDevelop}");
-        Log.Debug($"Reload Mode: {ModLoaderSettings.UseReload}");
+        _logger.LogDebug("Develop Mode: {DevelopMode}", Settings.UseDevelop);
+        _logger.LogDebug("Reload Mode: {ReloadMode}", Settings.UseReload);
     }
 
     private void SetupModFolderOverride()
     {
         try
         {
-            var ipcHandshakeFile = IpcHelpers.ReadIpcHandshakeFile();
+            var ipcHandshakeFile = _ipcHelper.ReadIpcHandshakeFile();
 
             if (ipcHandshakeFile.TryGetValue("MOD_FOLDER", out var modFolder))
             {
-                ModLoaderSettings.ModDirOverride = modFolder;
-                Log.Debug($"Mod folder override: {ModLoaderSettings.ModDir}");
+                Settings.ModDirOverride = modFolder;
+                _logger.LogDebug("Mod folder override: {Path}", Settings.ModDir);
             }
             else
             {
-                Log.Debug($"Mod folder: {ModLoaderSettings.ModDir}");
+                _logger.LogDebug("Mod folder: {Path}", Settings.ModDir);
             }
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"Resolve mod path failed: {e}");
+            _logger.LogError(ex, "Resolve mod path failed:");
             throw;
         }
     }
@@ -116,18 +113,18 @@ public class ModLoader
     {
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
-            Log.Debug($"Already loaded: {asm.FullName}");
+            _logger.LogDebug("Already loaded: {AssemblyName}", asm.FullName);
         }
-
-        Mods.Clear();
-        ModsInitialized.Clear();
-        if (!Directory.Exists(ModLoaderSettings.ModDir))
+        
+        _mods.Clear();
+        _modsInitialized.Clear();
+        if (!Directory.Exists(Settings.ModDir))
         {
-            Log.Error($"Mod dir {ModLoaderSettings.ModDir} not exists");
+            _logger.LogError("Mod dir {Path} not exists", Settings.ModDir);
             return;
         }
 
-        var allDirs = Directory.GetDirectories(ModLoaderSettings.ModDir);
+        var allDirs = Directory.GetDirectories(Settings.ModDir);
         var dirs = new List<string>();
         foreach (var dir in allDirs)
         {
@@ -154,9 +151,9 @@ public class ModLoader
             }
 
             if (loadOrder == null)
-                Log.Debug($"Default order: {dir}");
+                _logger.LogDebug("Default order: {Path}", dir);
             else
-                Log.Debug($"Order: {loadOrder} {dir}");
+                _logger.LogDebug("Order: {Order} {Path}", loadOrder, dir);
 
             var modName = Path.GetFileName(dir);
             var modMeta = new ModMetadata()
@@ -171,13 +168,13 @@ public class ModLoader
 
         dirs.Sort(Comparer<string>.Create((x, y) => meta[x].LoadOrder.CompareTo(meta[y].LoadOrder)));
 
-        var copyHelper = new AssemblyCopyHelper();
+        var copyHelper = new AssemblyCopyHelper(_logger);
         var renameHelper = new AssemblyRenameHelper();
 
-        ModLoaderSettings.CloneDir = copyHelper.GetTempPath();
+        Settings.CloneDir = copyHelper.GetTempPath();
         copyHelper.SetReloadSuffix($"__{_reloadCounter++}");
 
-        Log.Debug("======== Marking develop assemblies ========");
+        _logger.LogDebug("======== Marking develop assemblies ========");
 
         foreach (var d in meta)
         {
@@ -185,7 +182,7 @@ public class ModLoader
             var modMeta = d.Value;
             var modName = modMeta.ModName;
 
-            ModLoaderSettings.LoadingModName = modName;
+            Settings.LoadingModName = modName;
 
             foreach (var f in Directory.GetFiles(dir))
             {
@@ -199,7 +196,7 @@ public class ModLoader
 
                 var asmPath = f;
 
-                if (ModLoaderSettings.UseReload)
+                if (Settings.UseReload)
                 {
                     copyHelper.MarkForReload(
                         renameHelper,
@@ -209,41 +206,41 @@ public class ModLoader
                         out var asmFullName,
                         out var renamedAsmFullName
                     );
-                    Log.Debug($"Marked for reload: {asmFullName} -> {renamedAsmFullName}");
+                    _logger.LogDebug("Marked for reload: {OldName} -> {NewName}", asmFullName, renamedAsmFullName);
                 }
             }
 
             modMeta.OrigAsmPath = Path.Combine(dir, $"{modName}.dll");
         }
 
-        Log.Debug("======== Copying assemblies ========");
+        _logger.LogDebug("======== Copying assemblies ========");
 
         foreach (var d in meta)
         {
             var dir = d.Key;
             var modMeta = d.Value;
             var modName = modMeta.ModName;
-
-            Log.Debug($"Processing {modName}");
+            
+            _logger.LogDebug("Processing {Name}", modName);
 
             if (modMeta.Disabled)
             {
-                Log.Debug("Mod disabled");
+                _logger.LogDebug("Mod disabled");
                 continue;
             }
 
             var resolver = new DefaultAssemblyResolver();
             resolver.AddSearchDirectory(dir);
-            resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.ModDir, "Common"));
-            resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.ModDir, "ReflectionOnly"));
-            if (ModLoaderSettings.CloneDir != null)
+            resolver.AddSearchDirectory(Path.Combine(Settings.ModDir, "Common"));
+            resolver.AddSearchDirectory(Path.Combine(Settings.ModDir, "ReflectionOnly"));
+            if (Settings.CloneDir != null)
             {
-                resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.CloneDir, modName));
-                resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.CloneDir, "Common"));
-                resolver.AddSearchDirectory(Path.Combine(ModLoaderSettings.CloneDir, "ReflectionOnly"));
+                resolver.AddSearchDirectory(Path.Combine(Settings.CloneDir, modName));
+                resolver.AddSearchDirectory(Path.Combine(Settings.CloneDir, "Common"));
+                resolver.AddSearchDirectory(Path.Combine(Settings.CloneDir, "ReflectionOnly"));
             }
 
-            resolver.AddSearchDirectory(ModLoaderSettings.LoaderDir);
+            resolver.AddSearchDirectory(Settings.LoaderDir);
 
             foreach (var f in Directory.GetFiles(dir))
             {
@@ -263,7 +260,7 @@ public class ModLoader
 
                 string copiedAsmPath;
                 string? copiedAsmSymbols;
-                if (ModLoaderSettings.UseReload)
+                if (Settings.UseReload)
                 {
                     copyHelper.CreateAssemblyClone(
                         asmPath,
@@ -273,10 +270,10 @@ public class ModLoader
                         renameHelper,
                         resolver
                     );
-
-                    Log.Debug($"Copied {asmPath} -> {copiedAsmPath}");
+                    
+                    _logger.LogDebug("Copied {Path} -> {CopyPath}", asmPath, copiedAsmPath);
                     if (asmSymbols != null)
-                        Log.Debug($"Copied {asmSymbols} -> {copiedAsmSymbols}");
+                        _logger.LogDebug("Copied {Path} -> {CopyPath}", asmSymbols, copiedAsmSymbols);
                 }
                 else
                 {
@@ -290,6 +287,8 @@ public class ModLoader
 
         var csharpModType = typeof(ICSharpMod);
         var csharpModExType = typeof(ICSharpModEx);
+        var csharpModExV2Type = typeof(ICSharpModExV2);
+        
         foreach (var d in meta)
         {
             var dir = d.Key;
@@ -301,61 +300,67 @@ public class ModLoader
 
             if (modMeta.LoadAsmPath == null)
             {
-                Log.Debug($"No assembly to load for: {modName}");
+                _logger.LogDebug("No assembly to load for: {Name}", modName);
                 continue;
             }
 
-            ModLoaderSettings.LoadingModName = modName;
+            Settings.LoadingModName = modName;
 
             try
             {
-                Log.Debug($"======== Loading {modMeta.LoadAsmPath} ========");
+                _logger.LogTrace("======== Loading {Path} ========", modMeta.LoadAsmPath);
 
                 LoadResourceDlls(dir);
                 var asm = Assembly.LoadFrom(modMeta.LoadAsmPath);
-                Log.Debug($"Loaded: {modMeta.LoadAsmPath}");
+                _logger.LogTrace("Loaded: {Path}", modMeta.LoadAsmPath);
 
                 foreach (var type in asm.GetTypes())
                 {
                     if (csharpModType.IsAssignableFrom(type))
                     {
-                        if (csharpModExType.IsAssignableFrom(type))
-                            Log.Debug($"Found {nameof(ICSharpModEx)}: {type}");
-                        else
-                            Log.Debug($"Found {nameof(ICSharpMod)}: {type}");
+                        var baseType = csharpModExV2Type.IsAssignableFrom(type) ? csharpModExV2Type :
+                            csharpModExType.IsAssignableFrom(type) ? csharpModExType : csharpModType;
+
+                        _logger.LogTrace("Found {BaseType}: {Type}", baseType, type);
 
                         var modUntyped = Activator.CreateInstance(type);
                         if (modUntyped == null)
                         {
-                            Log.Error($"Failed to create instance of {type.FullName}");
+                            _logger.LogError("Failed to create instance of {TypeName}", type.FullName);
                             continue;
                         }
 
                         var mod = modUntyped as ICSharpMod;
                         if (mod == null)
                         {
-                            Log.Error($"Instance of {type.FullName} is not ICSharpMod");
+                            _logger.LogError("Instance of {TypeName} is not ICSharpMod", type.FullName);
                             continue;
                         }
 
+                        if (mod is ICSharpModExV2 modExV2)
+                        {
+                            var loggerFactory = Log.Provider.CreateLoggerFactory(modExV2.IsDebug, false);
+                            modExV2.SetLoggerFactory(loggerFactory);
+                            Log.Provider.Flush();
+                        }
+                        
                         var modObj = new ModObject()
                         {
                             Meta = modMeta,
                             Mod = mod,
                             ModEx = mod as ICSharpModEx,
-                            ModExV2 = mod as ICSharpModEx_V2,
+                            ModExV2 = mod as ICSharpModExV2,
                         };
-                        Mods.Add(modObj);
+                        _mods.Add(modObj);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Loading {modMeta.LoadAsmPath} failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Loading {Path} failed:", modMeta.LoadAsmPath);
             }
-
-            ModLoaderSettings.LoadingModName = null;
+            
+            Settings.LoadingModName = null;
         }
     }
 
@@ -367,124 +372,124 @@ public class ModLoader
             foreach (var resourcePath in resourcePaths)
             {
                 var resourceAsm = Assembly.LoadFrom(resourcePath);
-                Log.Debug($"Loaded resource: {resourceAsm.FullName}");
+                _logger.LogDebug("Loaded resource: {Name}", resourceAsm.FullName);
             }
         }
         catch (Exception ex)
         {
-            Log.Error($"Loading resources from {dir} failed:");
-            Log.Error(ex);
+            _logger.LogError(ex, "Loading resources from {Path} failed:", dir);
         }
     }
 
     public void InitMods()
     {
-        foreach (var modObj in Mods)
+        foreach (var modObj in _mods)
         {
-            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
+            Settings.LoadingModName = modObj.Meta.ModName;
 
             try
             {
                 modObj.Mod.Init();
-                ModsInitialized.Add(modObj);
-                Log.Debug($"Initialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                Log.Provider.Flush();
+                _modsInitialized.Add(modObj);
+                _logger.LogDebug("Initialized: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
             }
             catch (Exception ex)
             {
-                Log.Error($"Initializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modObj.Mod.Name, modObj.Mod.Version);
             }
-
-            ModLoaderSettings.LoadingModName = null;
+            
+            Settings.LoadingModName = null;
         }
     }
 
     public void LateInitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
     {
-        foreach (var modObj in Mods)
+        foreach (var modObj in _mods)
         {
             if (_cancellationToken.IsCancellationRequested)
                 break;
 
-            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
+            Settings.LoadingModName = modObj.Meta.ModName;
 
             try
             {
-                if (!ModsInitialized.Contains(modObj))
+                if (!_modsInitialized.Contains(modObj))
                 {
-                    Log.Warn($"Skipping late init for not initialized mod: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                    _logger.LogWarning("Skipping late init for not initialized mod: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
                     continue;
                 }
 
                 if (modObj.ModExV2 != null)
                 {
                     modObj.ModExV2.LateInit();
-                    ModsLateInitialized.Add(modObj);
-                    Log.Debug($"Late Initialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                    Log.Provider.Flush();
+                    _modsLateInitialized.Add(modObj);
+                    _logger.LogDebug("Late Initialized: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
                 }
 
                 if (reload && modObj.ModEx != null)
                 {
                     reloadContexts!.TryGetValue(modObj.ModEx.Name, out var reloadContext);
                     modObj.ModEx.Reload(reloadContext);
-                    Log.Debug($"Reloaded: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                    Log.Provider.Flush();
+                    _logger.LogDebug("Reloaded: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Initializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modObj.Mod.Name, modObj.Mod.Version);
             }
-
-            ModLoaderSettings.LoadingModName = null;
+            
+            Settings.LoadingModName = null;
         }
     }
 
     public void DeInitMods()
     {
         _lateInitThread?.Join();
-
-        var modsInitialized = new List<ModObject>(ModsInitialized);
+        
+        var modsInitialized = new List<ModObject>(_modsInitialized);
         modsInitialized.Reverse();
         foreach (var modObj in modsInitialized)
         {
-            ModLoaderSettings.LoadingModName = modObj.Meta.ModName;
+            Settings.LoadingModName = modObj.Meta.ModName;
 
             try
             {
                 modObj.Mod.DeInit();
-                ModsInitialized.Remove(modObj);
-                Log.Debug($"Deinitialized: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                Log.Provider.Flush();
+                _modsInitialized.Remove(modObj);
+                _logger.LogDebug("Deinitialized: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
             }
             catch (Exception ex)
             {
-                Log.Error($"Deinitializing {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Deinitializing {Name} ({Version}) failed:", modObj.Mod.Name, modObj.Mod.Version);
             }
-
-            ModLoaderSettings.LoadingModName = null;
+            
+            Settings.LoadingModName = null;
         }
     }
 
     public Dictionary<string, object> GetReloadContexts()
     {
         var result = new Dictionary<string, object>();
-        foreach (var modObj in ModsInitialized)
+        foreach (var modObj in _modsInitialized)
         {
             try
             {
                 if (modObj.ModEx != null)
                 {
                     var reloadContext = modObj.ModEx.GetReloadContext();
-                    Log.Debug($"Reload context for: {modObj.Mod.Name} ({modObj.Mod.Version})");
+                    Log.Provider.Flush();
+                    _logger.LogDebug("Reload context for: {Name} ({Version})", modObj.Mod.Name, modObj.Mod.Version);
                     if (reloadContext != null)
                         result.Add(modObj.ModEx.Name, reloadContext);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Fetching reload context {modObj.Mod.Name} ({modObj.Mod.Version}) failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Fetching reload context {Name} ({Version}) failed:", modObj.Mod.Name, modObj.Mod.Version);
             }
         }
 
@@ -494,13 +499,13 @@ public class ModLoader
     public void ReloadMods()
     {
         _lateInitThread?.Join();
-
-        Log.Debug("Fetching reload contexts");
+        
+        _logger.LogDebug("Fetching reload contexts");
         var reloadContexts = GetReloadContexts();
-
-        Log.Debug("Reloading mods");
-        InputManager.Clear();
-
+        
+        _logger.LogDebug("Reloading mods");
+        _inputManager.Clear();
+        
         DeInitMods();
 
         LoadMods();
@@ -513,15 +518,14 @@ public class ModLoader
     {
         _lateInitThread = new Thread(() =>
         {
-            Log.Debug("Starting late init thread");
+            _logger.LogDebug("Starting late init thread");
             try
             {
                 LateInitMods(false, null);
             }
             catch (Exception ex)
             {
-                Log.Error("Late init mods failed:");
-                Log.Error(ex);
+                _logger.LogError(ex, "Late init mods failed:");
             }
         })
         {
@@ -543,16 +547,16 @@ public class ModLoader
     {
         while (!_cancellationToken.IsCancellationRequested)
         {
-            Log.Flush();
+            Log.Provider.Flush();
             _cancellationToken.WaitHandle.WaitOne(100);
         }
     }
 
     public void StartInputLoop()
     {
-        Utils.InitInputManager(InputManager);
+        Utils.InitInputManager(_inputManager);
 
-        InputManager.RegisterBuiltinKeyBind(ModifierKeys.Control, Key.F5, ReloadMods);
+        _inputManager.RegisterBuiltinKeyBind(ModifierKeys.Control, Key.F5, ReloadMods);
         _inputLoopThread = new Thread(InputLoop)
         {
             IsBackground = true,
@@ -564,20 +568,20 @@ public class ModLoader
     {
         while (!_cancellationToken.IsCancellationRequested)
         {
-            InputManager.Update();
+            _inputManager.Update();
             _cancellationToken.WaitHandle.WaitOne(10);
         }
     }
 
     public void Cancel()
     {
-        Log.Debug("Cancelling in progress operations...");
+        _logger.LogDebug("Cancelling in progress operations...");
         _cancellationTokenSource.Cancel();
 
         _lateInitThread?.Join();
         _logLoopThread?.Join();
         _inputLoopThread?.Join();
-
-        Log.Debug("All operations cancelled.");
+        
+        _logger.LogDebug("All operations cancelled.");
     }
 }

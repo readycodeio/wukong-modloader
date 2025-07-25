@@ -45,7 +45,7 @@ bool mono_register_bundled_assemblies(MonoBundledAssembly **assemblies);
 void* get_mono_register_bundled_assemblies_ptr();
 bool intercept_register_bundled_assemblies(void(*callback)());
 MonoBundledAssembly** get_mono_register_bundled_assemblies();
-bool load_assembly_bundles(std::vector<std::filesystem::path> dirs);
+bool load_assembly_bundles(const std::vector<std::filesystem::path>& dirs);
 
 void* get_mono_assembly_request_open_ptr();
 void* mono_assembly_request_open(const std::filesystem::path& filename);
