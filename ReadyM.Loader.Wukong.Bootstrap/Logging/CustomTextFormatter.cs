@@ -79,8 +79,8 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
 
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
-            var threadId = Thread.CurrentThread.ManagedThreadId;
-            var skip = 2;
+            var threadId = Environment.CurrentManagedThreadId;
+            var skip = 7;
             MethodBase caller;
             do
             {

@@ -55,7 +55,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
 
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
-            var skip = 2;
+            var skip = 7;
             MethodBase caller;
             do
             {
@@ -72,7 +72,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
                 break;
             } while (true);
 
-            props[LoggerConstants.ThreadIdPropertyName] = Thread.CurrentThread.ManagedThreadId;
+            props[LoggerConstants.ThreadIdPropertyName] = Environment.CurrentManagedThreadId;
             props[LoggerConstants.LocationPropertyName] = $"{caller.DeclaringType?.FullName}.{caller.Name}";
 
             messageTemplate += $" [thread {LoggerConstants.ThreadIdPropertyName} at {LoggerConstants.LocationPropertyName}]";
