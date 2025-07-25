@@ -62,7 +62,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
                 var frame = new StackFrame(skip);
                 var method = frame.GetMethod();
                 var methodName = method?.Name ?? "";
-                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging"))
+                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging") || methodName.EndsWith("LogError") || methodName.EndsWith("LogCritical"))
                 {
                     skip++;
                     continue;

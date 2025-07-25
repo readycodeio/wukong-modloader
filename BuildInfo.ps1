@@ -107,6 +107,12 @@ function CopyFiles($files, $sourceDir, $destDir) {
             $file = $item
             $optional = $false
         }
+
+        # do not include any PDBs in the release build
+        if ($optional) {
+            continue
+        }
+        
         $sourceFile = Join-Path -Path $sourceDir -ChildPath $file
         $destFile = Join-Path -Path $destDir -ChildPath $file
         if ($file -eq "*") {
