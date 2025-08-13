@@ -85,7 +85,6 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
             MessageTemplate = messageTemplate ?? "",
             Properties = props,
             Session = sessionId,
-            // Category = logEntry.Category,
         };
 
         var jsonText = JsonSerializer.Serialize(record, _options);
