@@ -11,7 +11,7 @@ public class LoggerFactoryProvider : IDisposable
     private readonly CustomTextFormatter _textFormatter = new();
 
     private readonly JsonLoggerWorker _worker = new(JsonLoggerPath);
-    private readonly List<ILoggerFactory> _loggerFactories = new();
+    private readonly List<ILoggerFactory> _loggerFactories = [];
     private readonly TextWriter _threadSafeLogFileWriter;
 
     public LoggerFactoryProvider(Guid guid, SafeFileHandle logFileHandle)
@@ -30,7 +30,7 @@ public class LoggerFactoryProvider : IDisposable
             builder.AddProvider(new JsonLoggerProvider(_worker, _jsonFormatter));
             builder.AddProvider(new ColorConsoleLoggerProvider(autoFlush, _textFormatter));
             builder.AddProvider(new TextWriterLoggerProvider(autoFlush, _threadSafeLogFileWriter, _textFormatter));
-            builder.SetMinimumLevel(debugMode ? LogLevel.Debug : LogLevel.Error);
+            builder.SetMinimumLevel(debugMode ? LogLevel.Debug : LogLevel.Information);
         });
         _loggerFactories.Add(factory);
         return factory;

@@ -12,9 +12,9 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
 {
     private const string OriginalFormatField = "{OriginalFormat}";
     private const string LocationPropertyField = $"{{{LoggerConstants.LocationPropertyName}}}";
-    
+
     private static string DateTimeString => DateTime.Now.ToString("MM-dd HH:mm:ss.fff");
-    
+
     public override void Write<TState>(
         in LogEntry<TState> logEntry,
         IExternalScopeProvider? scopeProvider,
@@ -32,10 +32,10 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
             LogLevel.None => 'N',
             _ => throw new ArgumentOutOfRangeException(nameof(logEntry.LogLevel), logEntry.LogLevel, null)
         };
-        
+
         var category = logEntry.Category;
         var interpolatedMessage = "<INTERPOLATION ERROR>";
-        
+
         if (logEntry.State is IEnumerable<KeyValuePair<string, object?>> props)
         {
             foreach (var kv in props)
@@ -54,10 +54,11 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
                     interpolatedMessage = interpolatedMessage.Replace($"{{{kv.Key}}}", "<REDACTED>");
                     continue;
                 }
+
                 interpolatedMessage = interpolatedMessage.Replace($"{{{kv.Key}}}", kv.Value?.ToString() ?? "null");
             }
         }
-        
+
         textWriter.Write(timestamp);
         textWriter.Write(" [");
         textWriter.Write(letter);
@@ -69,14 +70,14 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
             textWriter.Write(category);
             textWriter.Write("]");
         }
-        
-        
+
         if (!string.IsNullOrEmpty(interpolatedMessage))
         {
             textWriter.Write(" ");
             textWriter.Write(interpolatedMessage);
         }
 
+#if DEBUG
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
             var threadId = Environment.CurrentManagedThreadId;
@@ -87,12 +88,12 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
                 var frame = new StackFrame(skip);
                 var method = frame.GetMethod();
                 var methodName = method?.Name ?? "";
-                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging") || methodName.EndsWith("LogError") || methodName.EndsWith("LogCritical"))
+                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging") || methodName.EndsWith("LogError") || methodName.EndsWith("LogCritical") || methodName.EndsWith("LogNull"))
                 {
                     skip++;
                     continue;
                 }
-                
+
                 caller = method!;
                 break;
             } while (true);
@@ -105,6 +106,7 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
             textWriter.Write(caller.Name);
             textWriter.Write("]");
         }
+#endif
 
         if (logEntry.Exception != null)
         {
