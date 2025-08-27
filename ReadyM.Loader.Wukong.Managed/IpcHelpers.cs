@@ -39,6 +39,8 @@ public class IpcHelper(ILogger logger)
 
         return buffer.ToString();
     }
+    
+    private static readonly HashSet<string> RedactedKeys = ["JWT_TOKEN"];
 
     public Dictionary<string, string> ReadIpcHandshakeFile()
     {
@@ -65,7 +67,14 @@ public class IpcHelper(ILogger logger)
                 var key = match.Groups["key"].Value.Trim();
                 var value = match.Groups["value"].Value.Trim();
                 data[key] = value;
-                logger.LogDebug("Parsed {Key}={Value}", key, value);
+                if (RedactedKeys.Contains(key))
+                {
+                    logger.LogDebug("Parsed {Key}=<redacted>", key);
+                }
+                else
+                {
+                    logger.LogDebug("Parsed {Key}={Value}", key, value);
+                }
             }
             else
             {

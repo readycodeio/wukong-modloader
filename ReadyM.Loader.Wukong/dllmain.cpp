@@ -364,7 +364,10 @@ static std::optional<std::wstring> try_get_mod_folder_override()
     log_debug(L"Parsed environment variables from {}:", path);
     for (const auto& [key, value] : env)
     {
-        log_debug(L"  {}: {}", key, value);
+        if (key == L"JWT_TOKEN")
+            continue; // skip logging the JWT for security reasons
+    
+        log_debug(L"{}: {}", key, value);
     }
 
     if (env.contains(L"LAUNCHER_PID"))
