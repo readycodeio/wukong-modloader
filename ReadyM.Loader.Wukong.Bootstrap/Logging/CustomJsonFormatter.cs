@@ -49,8 +49,8 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
         {
             messageTemplate = $"Exception: {{Message}} | Thread: {{Thread}} | Stack trace: {{Trace}} | Context: {messageTemplate}";
             props["Message"] = logEntry.Exception.Message;
-            props["Thread"] = Thread.CurrentThread.ManagedThreadId;
-            props["Trace"] = logEntry.Exception.StackTrace;
+            props["Thread"] = Environment.CurrentManagedThreadId;
+            props["Trace"] = logEntry.Exception.ToString();
         }
 
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
