@@ -204,6 +204,7 @@
     <ClCompile Include="Mono\mono-debug.cpp" />
     <ClCompile Include="Mono\object.cpp" />
     <ClCompile Include="Mono\threads.cpp" />
+    <ClCompile Include="Unreal\signature_check.cpp" />
     <ClCompile Include="USharp\usharp.cpp" />
     <ClCompile Include="Utils\string.cpp" />
     <ClCompile Include="Windows\console.cpp" />
@@ -234,6 +235,7 @@
     <ClInclude Include="Mono\object-internals.h" />
     <ClInclude Include="Mono\object.h" />
     <ClInclude Include="Mono\threads.h" />
+    <ClInclude Include="Unreal\signature_check.h" />
     <ClInclude Include="USharp\usharp.h" />
     <ClInclude Include="Utils\string.h" />
     <ClInclude Include="Windows\console.h" />
