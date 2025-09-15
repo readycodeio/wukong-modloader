@@ -20,6 +20,7 @@
 #include "Mono/mono-debug.h"
 #include "Mono/mono-error.h"
 #include "Mono/object-internals.h"
+#include "Unreal/signature_check.h"
 #include "USharp/usharp.h"
 #include "Windows/console.h"
 
@@ -364,7 +365,10 @@ static std::optional<std::wstring> try_get_mod_folder_override()
     log_debug(L"Parsed environment variables from {}:", path);
     for (const auto& [key, value] : env)
     {
-        log_debug(L"  {}: {}", key, value);
+        if (key == L"JWT_TOKEN")
+            continue; // skip logging the JWT for security reasons
+    
+        log_debug(L"{}: {}", key, value);
     }
 
     if (env.contains(L"LAUNCHER_PID"))
@@ -387,6 +391,19 @@ static std::optional<std::wstring> try_get_mod_folder_override()
     }
 
     return std::nullopt;
+}
+
+static bool init_pak_loading()
+{
+    log_info("Patching Unreal Engine .pak signature checks");
+    if (!patch_pak_signature_check())
+    {
+        log_error("Failed to patch Unreal Engine .pak signature checks");
+        return false;
+    }
+
+    log_info("Successfully patched Unreal Engine .pak signature checks to disable them.");
+    return true;
 }
 
 static bool init_embed_runtime()
@@ -481,6 +498,7 @@ static void init_dll(HMODULE hModule)
 
     init_version_dll();
     init_embed_runtime();
+    init_pak_loading();
 }
 
 
