@@ -172,13 +172,13 @@ bool init_debugger(const std::string& log_level, const std::string& log_mask, co
 }
 
 
-extern "C" void(*g_csharp_loader__load_runtime__callback)();
-extern "C" void csharp_loader__load_runtime__callback_trampoline();
+extern "C" void(*g_csharp_loader_x_load_runtime_x_callback)();
+extern "C" void csharp_loader_x_load_runtime_x_callback_trampoline();
 
 
-bool intercept_csharp_loader__load_runtimes(void(*callback)())
+bool intercept_csharp_loader_x_load_runtimes(void(*callback)())
 {
-    uint64_t csharp_loader__load_runtimes__epilogue = signature(
+    uint64_t csharp_loader_x_load_runtimes_x_epilogue = signature(
         "8b 03 "
         "c1 e8 03 "
         "a8 01 "
@@ -194,13 +194,13 @@ bool intercept_csharp_loader__load_runtimes(void(*callback)())
         "c3"
     );
     
-    if (!csharp_loader__load_runtimes__epilogue)
+    if (!csharp_loader_x_load_runtimes_x_epilogue)
     {
-        log_error_missing_ptr("csharp_loader__load_runtimes__epilogue");
+        log_error_missing_ptr("csharp_loader_x_load_runtimes_x_epilogue");
         return false;
     }
 
-    log_debug_ptr("csharp_loader__load_runtimes__epilogue", csharp_loader__load_runtimes__epilogue);
+    log_debug_ptr("csharp_loader_x_load_runtimes_x_epilogue", csharp_loader_x_load_runtimes_x_epilogue);
 
     uint8_t instr_patch[] = {
         // MOV RCX, <callback_trampoline>
@@ -209,11 +209,11 @@ bool intercept_csharp_loader__load_runtimes(void(*callback)())
         0xFF, 0xE1
     };
     // Set the callback address in the patch
-    *reinterpret_cast<void**>(instr_patch + 2) = &csharp_loader__load_runtime__callback_trampoline;
+    *reinterpret_cast<void**>(instr_patch + 2) = reinterpret_cast<void*>(csharp_loader_x_load_runtime_x_callback_trampoline);
 
-    g_csharp_loader__load_runtime__callback = callback;
+    g_csharp_loader_x_load_runtime_x_callback = callback;
 
-    auto patch_instr_ptr= csharp_loader__load_runtimes__epilogue + 25;
+    auto patch_instr_ptr= csharp_loader_x_load_runtimes_x_epilogue + 25;
     auto patch_instr_rva = patch_instr_ptr - g_exe_base_address;
     if (!patch_set_data(g_main_module_name, patch_instr_rva, instr_patch, sizeof(instr_patch)))
     {
@@ -225,13 +225,13 @@ bool intercept_csharp_loader__load_runtimes(void(*callback)())
 }
 
 
-extern "C" void(*g_csharp_loader__load__callback)();
-extern "C" void csharp_loader__load__callback_trampoline();
+extern "C" void(*g_csharp_loader_x_load_x_callback)();
+extern "C" void csharp_loader_x_load_x_callback_trampoline();
 
 
-bool intercept_csharp_loader__load(void(*callback)())
+bool intercept_csharp_loader_x_load(void(*callback)())
 {
-    uint64_t csharp_loader__load__epilogue = signature(
+    uint64_t csharp_loader_x_load_x_epilogue = signature(
         "48 8b 8d "
         "d0 04 00 00 "
         "48 33 cc "
@@ -248,13 +248,13 @@ bool intercept_csharp_loader__load(void(*callback)())
         "c3"
     );
     
-    if (!csharp_loader__load__epilogue)
+    if (!csharp_loader_x_load_x_epilogue)
     {
-        log_error_missing_ptr("csharp_loader__load__epilogue");
+        log_error_missing_ptr("csharp_loader_x_load_x_epilogue");
         return false;
     }
 
-    log_debug_ptr("csharp_loader__load__epilogue", csharp_loader__load__epilogue);
+    log_debug_ptr("csharp_loader_x_load_x_epilogue", csharp_loader_x_load_x_epilogue);
 
     uint8_t instr_patch[] = {
         // MOV RCX, <callback_trampoline>
@@ -263,11 +263,11 @@ bool intercept_csharp_loader__load(void(*callback)())
         0xFF, 0xE1
     };
     // Set the callback address in the patch
-    *reinterpret_cast<void**>(instr_patch + 2) = &csharp_loader__load__callback_trampoline;
+    *reinterpret_cast<void**>(instr_patch + 2) = reinterpret_cast<void*>(csharp_loader_x_load_x_callback_trampoline);
 
-    g_csharp_loader__load__callback = callback;
+    g_csharp_loader_x_load_x_callback = callback;
 
-    auto patch_instr_ptr= csharp_loader__load__epilogue + 15;
+    auto patch_instr_ptr= csharp_loader_x_load_x_epilogue + 15;
     auto patch_instr_rva = patch_instr_ptr - g_exe_base_address;
     if (!patch_set_data(g_main_module_name, patch_instr_rva, instr_patch, sizeof(instr_patch)))
     {

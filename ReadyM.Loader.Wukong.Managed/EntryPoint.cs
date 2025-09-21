@@ -1,53 +1,46 @@
-﻿using EmbedCSharpLoader.Managed;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
+using BootstrapDI = ReadyM.Loader.Wukong.Bootstrap.DI;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
 // ReSharper disable once UnusedType.Global
 public static class EntryPoint
 {
-    private static ILoggerFactory _loggerFactory = null!;
-    private static ILogger _logger = null!;
-    
-    private static ManagedLoader _managedLoader = null!;
-    
     // ReSharper disable once UnusedMember.Global
-    public static void Init()
+    public static void Init(BootstrapDI bootstrapDI)
     {
-        _loggerFactory = Log.Provider.CreateLoggerFactory(true, true);
-        _logger = _loggerFactory.CreateLogger("ManagedLoader");
+        DI.Instance.Init(bootstrapDI);
         
-        _logger.LogDebug("Managed entry point init");
+        DI.Instance.LoaderLogger.LogDebug("Managed entry point init");
+        DI.Instance.LoggerService.StartLogLoop();
 
-        var ipcHelper = new IpcHelper(_logger);
-        _managedLoader = new ManagedLoader(_logger, ipcHelper);
-        
-        _managedLoader.SetupDefault();
-
-        var legacyFactory = Log.Provider.CreateLoggerFactory(Settings.UseDevelop, false);
+        var legacyFactory = Log.Provider.CreateLoggerFactory(DI.Instance.ModLoaderSettings.UseDevelop, false);
         var legacyLogger = legacyFactory.CreateLogger("");
         LegacyLog.SetLogger(legacyLogger);
         
-        _managedLoader.StartLogLoop();
-        _managedLoader.StartInputLoop();
+        DI.Instance.InputManagerService.StartInputLoop();
         
-        _managedLoader.LoadMods();
-        _managedLoader.InitMods();
-        _managedLoader.StartLateInitMods();
+        DI.Instance.ModLoader.LoadMods();
+        DI.Instance.ModLoader.InitMods();
 
-        _logger.LogDebug("Managed entry init complete");
+        DI.Instance.LoaderLogger.LogDebug("Managed entry init complete");
+    }
+
+    public static void LateInit()
+    {
+        DI.Instance.ModLoader.StartLateInitMods();
     }
 
     // ReSharper disable once UnusedMember.Global
     public static void DeInit()
     {
-        _logger.LogDebug("Managed entry point deinit");
+        DI.Instance.LoaderLogger.LogDebug("Managed entry point deinit");
 
-        _managedLoader.Cancel();
-        _managedLoader.DeInitMods();
+        DI.Instance.LoadingPhaseManager.CancelLoading();
+        DI.Instance.ModLoader.DeInitMods();
         
-        _logger.LogDebug("Managed entry deinit complete");
+        DI.Instance.LoaderLogger.LogDebug("Managed entry deinit complete");
     }
 }

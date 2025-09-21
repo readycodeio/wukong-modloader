@@ -103,7 +103,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -121,7 +121,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -237,6 +237,7 @@
     <ClInclude Include="Mono\threads.h" />
     <ClInclude Include="Unreal\signature_check.h" />
     <ClInclude Include="USharp\usharp.h" />
+    <ClInclude Include="Utils\deferred_call.h" />
     <ClInclude Include="Utils\string.h" />
     <ClInclude Include="Windows\console.h" />
   </ItemGroup>

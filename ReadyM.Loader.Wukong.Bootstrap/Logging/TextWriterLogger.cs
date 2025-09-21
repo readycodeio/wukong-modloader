@@ -6,9 +6,9 @@ namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter writer, ConsoleFormatter consoleFormatter) : ILogger
 {
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable? BeginScope<TState>(TState state)
         where TState : notnull
-        => null!;
+        => null;
 
     public bool IsEnabled(LogLevel logLevel)
         => true;

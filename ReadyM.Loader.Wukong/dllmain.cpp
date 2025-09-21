@@ -22,6 +22,7 @@
 #include "Mono/object-internals.h"
 #include "Unreal/signature_check.h"
 #include "USharp/usharp.h"
+#include "Utils/deferred_call.h"
 #include "Windows/console.h"
 
 
@@ -32,11 +33,13 @@ static HMODULE g_hModule = nullptr;
 
 
 constexpr const char* k_entry_point_init_logging_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:InitLogging";
+constexpr const char* k_entry_point_preprocess_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Preprocess";
 constexpr const char* k_entry_point_init_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:Init";
+constexpr const char* k_entry_point_late_init_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:LateInit";
 constexpr const char* k_entry_point_deinit_method = "ReadyM.Loader.Wukong.Bootstrap.EntryPoint:DeInit";
 
 
-static bool init_managed_mod_loader()
+static bool bootstrap_init()
 {
     auto image = mono_assembly_get_image(g_assembly);
 
@@ -47,52 +50,62 @@ static bool init_managed_mod_loader()
     }
 
     auto init_logging_method_desc = mono_method_desc_new(k_entry_point_init_logging_method, true);
+    defer([&] { mono_method_desc_free(init_logging_method_desc); });
 
     if (!init_logging_method_desc)
     {
         log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_init_logging_method);
         return false;
     }
-    
-    auto init_logging_method = mono_method_desc_search_in_image(init_logging_method_desc, image);
 
+    auto init_logging_method = mono_method_desc_search_in_image(init_logging_method_desc, image);
     if (!init_logging_method)
     {
         log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_init_logging_method);
-        mono_method_desc_free(init_logging_method_desc);
+        return false;
+    }
+    
+    auto preprocess_method_desc = mono_method_desc_new(k_entry_point_preprocess_method, true);
+    defer([&] { mono_method_desc_free(preprocess_method_desc); });
+    
+    if (!preprocess_method_desc)
+    {
+        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_preprocess_method);
         return false;
     }
 
+    auto preprocess_method = mono_method_desc_search_in_image(preprocess_method_desc, image);
+    if (!preprocess_method)
+    {
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_preprocess_method);
+        return false;
+    }
+    
     auto init_method_desc = mono_method_desc_new(k_entry_point_init_method, true);
+    defer([&] { mono_method_desc_free(init_method_desc); });
 
     if (!init_method_desc)
     {
-        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_deinit_method);
+        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_init_method);
         return false;
     }
 
     auto init_method = mono_method_desc_search_in_image(init_method_desc, image);
-
     if (!init_method)
     {
         log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_init_method);
-        mono_method_desc_free(init_logging_method_desc);
-        mono_method_desc_free(init_method_desc);
         return false;
     }
-
-    mono_method_desc_free(init_logging_method_desc);
-    mono_method_desc_free(init_method_desc);
 
     MonoException* exc = nullptr;
     MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
 
-    void* params[2] = {
+    void* init_logging_params[2] = {
         &g_log_file_handle,
         nullptr
     };
     
-    mono_runtime_invoke(init_logging_method, nullptr, params, exc_obj);
+    mono_runtime_invoke(init_logging_method, nullptr, init_logging_params, exc_obj);
     
     if (exc != nullptr)
     {
@@ -105,6 +118,27 @@ static bool init_managed_mod_loader()
         return false;
     }
 
+    exc = nullptr;
+
+    void* preprocess_params[3] = {
+        *get_bundles_ptr(),
+        get_glib_new0_ptr(),
+        nullptr
+    };
+
+    mono_runtime_invoke(preprocess_method, nullptr, preprocess_params, exc_obj);
+
+    if (exc != nullptr)
+    {
+        log_error("mono_runtime_invoke {} failed with exception", k_entry_point_preprocess_method);
+        MonoObject* exc0 = nullptr;
+        MonoError error0;
+        auto exc_mono_str = mono_object_try_to_string(reinterpret_cast<MonoObject*>(exc), &exc0, &error0);
+        auto exc_msg = mono_string_chars_internal(exc_mono_str);
+        log_error(L"{}", exc_msg);
+        return false;
+    }
+    
     exc = nullptr;
 
     mono_runtime_invoke(init_method, nullptr, nullptr, exc_obj);
@@ -127,7 +161,59 @@ static bool init_managed_mod_loader()
 }
 
 
-static void post_csharp_loader__load__callback()
+static bool bootstrap_late_init()
+{
+    auto image = mono_assembly_get_image(g_assembly);
+
+    if (!image)
+    {
+        log_error("mono_assembly_get_image failed");
+        return false;
+    }
+
+    auto late_init_method_desc = mono_method_desc_new(k_entry_point_late_init_method, true);
+    defer([&] { mono_method_desc_free(late_init_method_desc); });
+
+    if (!late_init_method_desc)
+    {
+        log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_late_init_method);
+        return false;
+    }
+
+    auto late_init_method = mono_method_desc_search_in_image(late_init_method_desc, image);
+
+    if (!late_init_method)
+    {
+        log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_late_init_method);
+        return false;
+    }
+
+    MonoException* exc = nullptr;
+    MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
+    
+    exc = nullptr;
+
+    mono_runtime_invoke(late_init_method, nullptr, nullptr, exc_obj);
+
+    if (exc != nullptr)
+    {
+        log_error("mono_runtime_invoke {} failed with exception", k_entry_point_late_init_method);
+        MonoObject* exc0 = nullptr;
+        MonoError error0;
+        auto exc_mono_str = mono_object_try_to_string(reinterpret_cast<MonoObject*>(exc), &exc0, &error0);
+        auto exc_msg = mono_string_chars_internal(exc_mono_str);
+        log_error(L"{}", exc_msg);
+        return false;
+    }
+
+    g_already_init_managed = true;
+
+    log_debug("CSharpLoader late init success.");
+    return true;
+}
+
+
+static void post_csharp_loader_x_load_runtime_x_callback()
 {
     g_domain = mono_get_root_domain();
     if (!g_domain)
@@ -147,17 +233,29 @@ static void post_csharp_loader__load__callback()
 
     log_info("Loaded managed mod assembly entry point.");
 
-#ifdef LOAD_THREADED
-    g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
-#else
-    if (!init_managed_mod_loader())
+    if (!bootstrap_init())
     {
         log_error("init_managed_mod_loader failed.");
         return;
     }
+
+    log_debug("post_csharp_loader_x_load_runtime_x_callback completed successfully.");
+}
+
+
+static void post_csharp_loader_x_load_x_callback()
+{
+#ifdef LOAD_THREADED
+    g_main_background_thread = CreateThread(nullptr, 0, mod_background_thread, g_hModule, 0, nullptr);
+#else
+    if (!bootstrap_late_init())
+    {
+        log_error("late_init_managed_mod_loader failed.");
+        return;
+    }
 #endif
 
-    log_debug("post_csharp_loader__load__callback completed successfully.");
+    log_debug("post_csharp_loader_x_load_x_callback completed successfully.");
 }
 
 
@@ -174,7 +272,7 @@ static void post_load_assembly_bundles()
         loader_dir / "ReadyM.Loader.Wukong.Bootstrap.dll"
     };
 
-    if (load_assembly_bundles(dirs))
+    if (load_and_replace_assembly_bundles(dirs))
     {
         log_info("Loaded assembly bundle overrides.");
     }
@@ -437,7 +535,13 @@ static bool init_embed_runtime()
     auto enable_develop_flag = load_enable_develop();
 
     log_info("Intercepting USharp init.");
-    if (!intercept_csharp_loader__load(&post_csharp_loader__load__callback))
+    if (!intercept_csharp_loader_x_load_runtimes(&post_csharp_loader_x_load_runtime_x_callback))
+    {
+        log_error("Failed to intercept USharp init.");
+        return false;
+    }
+
+    if (!intercept_csharp_loader_x_load(&post_csharp_loader_x_load_x_callback))
     {
         log_error("Failed to intercept USharp init.");
         return false;

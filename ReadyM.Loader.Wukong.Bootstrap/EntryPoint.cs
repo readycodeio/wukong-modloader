@@ -1,7 +1,5 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32.SafeHandles;
-using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using UnrealEngine.Runtime;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
@@ -9,44 +7,38 @@ namespace ReadyM.Loader.Wukong.Bootstrap;
 // ReSharper disable once UnusedType.Global
 public static class EntryPoint
 {
-    private static LoggerFactoryProvider _provider = null!;
-    private static ILoggerFactory _loggerFactory = null!;
-    private static ILogger _logger = null!;
-    
-    private static Bootstrapper _bootstrapper = null!;
-    
     private static Assembly? _loaderAssembly;
     private static Type? _managedEntryPoint;
 
     // ReSharper disable once UnusedMember.Global
-    public static void InitLogging(long handle)
+    public static void InitLogging(long logFileHandlePtr)
     {
-        var ptr = new IntPtr(handle);
-        var logFileHandle = new SafeFileHandle(ptr, ownsHandle: false);
+        DI.Instance.InitLogging(logFileHandlePtr);
+        DI.Instance.BootstrapLogger.LogDebug("Logging initialized.");
+    }
 
-        _provider = new LoggerFactoryProvider(Guid.NewGuid(), logFileHandle);
-        Log.Provider = _provider;
+    // ReSharper disable once UnusedMember.Global
+    public static unsafe void Preprocess(MonoBundledAssembly** bundledAssemblyArrayPtr, IntPtr glibNew0Ptr)
+    {
+        DI.Instance.BootstrapLogger.LogDebug("Initializing DI...");
+        DI.Instance.Init(bundledAssemblyArrayPtr, glibNew0Ptr);
         
-        _loggerFactory = _provider.CreateLoggerFactory(true, true);
-        _logger = _loggerFactory.CreateLogger("Bootstrap");
-
-        _logger.LogDebug("Logging initialized.");
+        DI.Instance.BootstrapLogger.LogDebug("Preprocessing assemblies...");
+        DI.Instance.AssemblyPreprocessor.Preprocess(DI.Instance.ModRegistry);
     }
  
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
-        _logger.LogDebug("Bootstrapping...");
-
-        _bootstrapper = new Bootstrapper(_logger);
+        DI.Instance.BootstrapLogger.LogDebug("Bootstrapping...");
         
         try
         {
-            _bootstrapper.Setup();
+            DI.Instance.AssemblyResolverSetup.Setup();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while bootstrapping");
+            DI.Instance.BootstrapLogger.LogError(ex, "Error while bootstrapping");
             return;
         }
 
@@ -56,36 +48,60 @@ public static class EntryPoint
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while opening loader assembly");
+            DI.Instance.BootstrapLogger.LogError(ex, "Error while opening loader assembly");
             return;
         }
 
         _managedEntryPoint = _loaderAssembly.GetType("ReadyM.Loader.Wukong.Managed.EntryPoint");
         if (_managedEntryPoint == null)
         {
-            _logger.LogError("Could not find entry point");
+            DI.Instance.BootstrapLogger.LogError("Could not find entry point");
             return;
         }
         
         var initMethod = _managedEntryPoint.GetMethod("Init");
         if (initMethod == null)
         {
-            _logger.LogError("Could not find Init method in entry point");
+            DI.Instance.BootstrapLogger.LogError("Could not find Init method in entry point");
             return;
         }
         
         try
         {
-            initMethod.Invoke(null, null);
+            initMethod.Invoke(null, [DI.Instance]);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while invoking Init method");
+            DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking Init method");
         }
 
-        _logger.LogDebug("Bootstrapping complete.");
+        DI.Instance.BootstrapLogger.LogDebug("Bootstrapping complete.");
+    }
+    
+    // ReSharper disable once UnusedMember.Global
+    public static void LateInit()
+    {
+        DI.Instance.BootstrapLogger.LogDebug("Late bootstrapping...");
+
+        var lateInitMethod = _managedEntryPoint!.GetMethod("LateInit");
+        if (lateInitMethod == null)
+        {
+            DI.Instance.BootstrapLogger.LogError("Could not find LateInit method in entry point");
+            return;
+        }
         
+        try
+        {
+            lateInitMethod.Invoke(null, null);
+        }
+        catch (Exception ex)
+        {
+            DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking LateInit method");
+        }
+
         FCoreDelegates.OnExit.Bind(DeInit);
+        
+        DI.Instance.BootstrapLogger.LogDebug("Late bootstrapping complete.");
     }
 
     public static void DeInit()
@@ -95,7 +111,7 @@ public static class EntryPoint
             var deInitMethod = _managedEntryPoint.GetMethod("DeInit");
             if (deInitMethod == null)
             {
-                _logger.LogError("Could not find DeInit method in entry point");
+                DI.Instance.BootstrapLogger.LogError("Could not find DeInit method in entry point");
                 return;
             }
         
@@ -105,10 +121,10 @@ public static class EntryPoint
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while invoking DeInit method");
+                DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking DeInit method");
             }
         }
         
-        _provider.Dispose();
+        DI.Instance.LoggerProvider.Dispose();
     }
 }
