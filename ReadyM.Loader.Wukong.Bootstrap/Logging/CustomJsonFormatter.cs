@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
-using ReadyM.Loader.Wukong.Bootstrap.Logging.Unreal;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
@@ -13,14 +13,15 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
     private readonly JsonSerializerOptions _options = new(JsonSerializerOptions.Default)
     {
         WriteIndented = false,
-        Converters =
-        {
-            new FTextConverter()
-        }
     };
 
     private static readonly Dictionary<string, object> EmptyProperties = new();
 
+    public void RegisterConverter(JsonConverter converter)
+    {
+        _options.Converters.Add(converter);
+    }
+    
     public override void Write<TState>(
         in LogEntry<TState> logEntry,
         IExternalScopeProvider? scopeProvider,

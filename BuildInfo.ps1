@@ -6,7 +6,7 @@ $zipName = "Loader"
 # Define the source and destination directories
 $nativeSourceDir = "x64/$Configuration"
 $bootstrapSourceDir = "ReadyM.Loader.Wukong.Bootstrap/bin/$Configuration/netstandard2.0/win-x64"
-$csharpModBaseSourceDir = "CSharpModBase/bin/$Configuration/net472"
+$csharpModBaseSourceDir = "CSharpModBase/bin/$Configuration/netstandard2.0"
 $csharpModBaseV2SourceDir = "CSharpModBaseV2/bin/$Configuration/netstandard2.0"
 $managedSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
 $overridesSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
@@ -34,7 +34,10 @@ $csharpModBaseFiles = @(
     "CSharpModBase.dll",
     @("CSharpModBase.pdb", $true),
     "SharpDX.dll", 
-    "SharpDX.XInput.dll"
+    "SharpDX.XInput.dll",
+    "MonoMod.Backports.dll",
+    "MonoMod.ILHelpers.dll",
+    "MonoMod.Utils.dll"
 )
 $csharpModBaseV2Files = @(
     "CSharpModBaseV2.dll",
@@ -76,7 +79,12 @@ $overridesFiles = @(
     "System.Runtime.CompilerServices.Unsafe.dll",
     "System.Text.Encodings.Web.dll",
     "System.Text.Json.dll",
-    "System.Threading.Tasks.Extensions.dll"
+    "System.Threading.Tasks.Extensions.dll",
+    "Mono.Cecil.dll",
+    "Mono.Cecil.Mdb.dll",
+    "Mono.Cecil.Pdb.dll", 
+    "Mono.Cecil.Rocks.dll",
+    "PreludeLib.dll"
 )
 $pakFiles = @(
     "WukongMp.pak"

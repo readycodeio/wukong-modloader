@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFramework>net472</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -16,12 +16,6 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.6" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="UnrealEngine.Runtime">
-        <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
-      </Reference>
     </ItemGroup>
 
     <ItemGroup>

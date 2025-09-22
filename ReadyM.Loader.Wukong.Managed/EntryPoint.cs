@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
+using UnrealEngine.Runtime;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
 using BootstrapDI = ReadyM.Loader.Wukong.Bootstrap.DI;
 
@@ -26,6 +27,8 @@ public static class EntryPoint
         DI.Instance.ModLoader.InitMods();
 
         DI.Instance.LoaderLogger.LogDebug("Managed entry init complete");
+        
+        FCoreDelegates.OnExit.Bind(DeInit);
     }
 
     public static void LateInit()

@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using UnrealEngine.Runtime;
 
-namespace ReadyM.Loader.Wukong.Bootstrap.Logging.Unreal;
+namespace ReadyM.Loader.Wukong.Managed.Unreal;
 
 public class FTextConverter : JsonConverter<FText>
 {

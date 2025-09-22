@@ -50,7 +50,7 @@ static bool bootstrap_init()
     }
 
     auto init_logging_method_desc = mono_method_desc_new(k_entry_point_init_logging_method, true);
-    defer([&] { mono_method_desc_free(init_logging_method_desc); });
+    DEFER([&] { mono_method_desc_free(init_logging_method_desc); });
 
     if (!init_logging_method_desc)
     {
@@ -66,7 +66,7 @@ static bool bootstrap_init()
     }
     
     auto preprocess_method_desc = mono_method_desc_new(k_entry_point_preprocess_method, true);
-    defer([&] { mono_method_desc_free(preprocess_method_desc); });
+    DEFER([&] { mono_method_desc_free(preprocess_method_desc); });
     
     if (!preprocess_method_desc)
     {
@@ -82,7 +82,7 @@ static bool bootstrap_init()
     }
     
     auto init_method_desc = mono_method_desc_new(k_entry_point_init_method, true);
-    defer([&] { mono_method_desc_free(init_method_desc); });
+    DEFER([&] { mono_method_desc_free(init_method_desc); });
 
     if (!init_method_desc)
     {
@@ -120,9 +120,11 @@ static bool bootstrap_init()
 
     exc = nullptr;
 
+    auto preprocess_param_0 = reinterpret_cast<long long>(*get_bundles_ptr());
+    auto preprocess_param_1 = reinterpret_cast<long long>(get_glib_new0_ptr());
     void* preprocess_params[3] = {
-        *get_bundles_ptr(),
-        get_glib_new0_ptr(),
+        &preprocess_param_0,
+        &preprocess_param_1,
         nullptr
     };
 
@@ -172,7 +174,7 @@ static bool bootstrap_late_init()
     }
 
     auto late_init_method_desc = mono_method_desc_new(k_entry_point_late_init_method, true);
-    defer([&] { mono_method_desc_free(late_init_method_desc); });
+    DEFER([&] { mono_method_desc_free(late_init_method_desc); });
 
     if (!late_init_method_desc)
     {

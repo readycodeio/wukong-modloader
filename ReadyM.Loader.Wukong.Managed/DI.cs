@@ -1,6 +1,7 @@
 ﻿using CSharpManager;
 using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Managed.Unreal;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
@@ -29,6 +30,8 @@ public class DI
         var loggerFactory = LoggerFactory = bootstrapDI.LoggerProvider.CreateLoggerFactory(true, true);
         var loaderLogger = LoaderLogger = loggerFactory.CreateLogger("ManagedLoader");
 
+        bootstrapDI.LoggerProvider.RegisterConverter(new FTextConverter());
+        
         var modRegistry = ModRegistry = bootstrapDI.ModRegistry;
         var currentLoadingState = CurrentLoadingState = bootstrapDI.CurrentLoadingState;
         var pathSettings = PathSettings = bootstrapDI.PathSettings;

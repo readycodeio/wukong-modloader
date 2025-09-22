@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using Mono.Cecil;
 using ReadyM.Loader.Wukong.Bootstrap;
 
@@ -24,16 +25,21 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
     private readonly List<Entry> _entries = [];
     private readonly Dictionary<string, int> _entryByName = [];
     
-    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator)
+    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator, ILogger logger)
     {
         _allocator = allocator;
         
         for (var itemPtr = array.FirstItemPtr; *itemPtr != null; itemPtr++)
         {
             var item = *itemPtr;
+            
             var name = Marshal.PtrToStringAnsi(new IntPtr(item->name));
             if (name == null)
                 continue;
+            if (_entryByName.ContainsKey(name))
+                continue;
+
+            logger.LogDebug("Found bundled assembly at {Ptr}", name);
 
             var entryIndex = _entries.Count;
             var entry = new Entry()

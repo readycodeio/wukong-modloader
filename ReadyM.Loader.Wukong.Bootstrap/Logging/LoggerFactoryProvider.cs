@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32.SafeHandles;
 
@@ -50,5 +51,10 @@ public class LoggerFactoryProvider : IDisposable
     {
         Console.Out.Flush();
         _threadSafeLogFileWriter.Flush();
+    }
+    
+    public void RegisterConverter(JsonConverter converter)
+    {
+        _jsonFormatter.RegisterConverter(converter);
     }
 }

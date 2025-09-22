@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.Logging;
-using UnrealEngine.Runtime;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
@@ -13,15 +12,19 @@ public static class EntryPoint
     // ReSharper disable once UnusedMember.Global
     public static void InitLogging(long logFileHandlePtr)
     {
-        DI.Instance.InitLogging(logFileHandlePtr);
+        DI.Instance.InitLogging(new IntPtr(logFileHandlePtr));
         DI.Instance.BootstrapLogger.LogDebug("Logging initialized.");
     }
 
     // ReSharper disable once UnusedMember.Global
-    public static unsafe void Preprocess(MonoBundledAssembly** bundledAssemblyArrayPtr, IntPtr glibNew0Ptr)
+    public static unsafe void Preprocess(long bundledAssemblyArrayPtr, long glibNew0Ptr)
     {
         DI.Instance.BootstrapLogger.LogDebug("Initializing DI...");
-        DI.Instance.Init(bundledAssemblyArrayPtr, glibNew0Ptr);
+        DI.Instance.BootstrapLogger.LogDebug("Argument 0: {Arg0}", bundledAssemblyArrayPtr);
+        DI.Instance.BootstrapLogger.LogDebug("Argument 1: {Arg1}", glibNew0Ptr);
+
+        DI.Instance.Init((MonoBundledAssembly**)bundledAssemblyArrayPtr, new IntPtr(glibNew0Ptr));
+        DI.Instance.BootstrapLogger.LogDebug("Initialization complete.");
         
         DI.Instance.BootstrapLogger.LogDebug("Preprocessing assemblies...");
         DI.Instance.AssemblyPreprocessor.Preprocess(DI.Instance.ModRegistry);
@@ -99,32 +102,6 @@ public static class EntryPoint
             DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking LateInit method");
         }
 
-        FCoreDelegates.OnExit.Bind(DeInit);
-        
         DI.Instance.BootstrapLogger.LogDebug("Late bootstrapping complete.");
-    }
-
-    public static void DeInit()
-    {
-        if (_managedEntryPoint != null)
-        {
-            var deInitMethod = _managedEntryPoint.GetMethod("DeInit");
-            if (deInitMethod == null)
-            {
-                DI.Instance.BootstrapLogger.LogError("Could not find DeInit method in entry point");
-                return;
-            }
-        
-            try
-            {
-                deInitMethod.Invoke(null, null);
-            }
-            catch (Exception ex)
-            {
-                DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking DeInit method");
-            }
-        }
-        
-        DI.Instance.LoggerProvider.Dispose();
     }
 }

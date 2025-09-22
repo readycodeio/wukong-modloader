@@ -2,6 +2,7 @@
 using Microsoft.Win32.SafeHandles;
 using PreludeLib.CompileTime.Backend.WeaverCallback;
 using PreludeLib.CompileTime.Public;
+using PreludeLib.CompileTime.Registry;
 using PreludeLib.Tests.Preprocess;
 using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using ReadyM.Loader.Wukong.Bootstrap.Preprocess;
@@ -34,7 +35,7 @@ public class DI
     public CurrentLoadingState CurrentLoadingState { get; private set; } = null!;
     public AppDomainAssemblyResolverSetup AssemblyResolverSetup { get; private set; } = null!;
 
-    public void InitLogging(long logFileHandlePtr)
+    public void InitLogging(IntPtr logFileHandlePtr)
     {
         var earlyLogger = EarlyLogger = new EarlyLogger();
         
@@ -42,7 +43,7 @@ public class DI
         var pathSettingsFactory = PathSettingsFactory = new PathSettingsFactory(ipcHelper, earlyLogger);
         var pathSettings = PathSettings = pathSettingsFactory.CreateSettings();
         
-        var logFileHandle = new SafeFileHandle(new IntPtr(logFileHandlePtr), ownsHandle: false);
+        var logFileHandle = new SafeFileHandle(logFileHandlePtr, ownsHandle: false);
 
         var loggerProvider = LoggerProvider = new LoggerFactoryProvider(Guid.NewGuid(), logFileHandle, pathSettings);
         Log.Provider = loggerProvider;
@@ -55,20 +56,22 @@ public class DI
 
     public unsafe void Init(MonoBundledAssembly** bundledAssemblyArrayPtr, IntPtr glibNew0Ptr)
     {
+        BootstrapLogger.LogDebug("DI Init started");
         var allocator = Allocator = new GlibAllocator(glibNew0Ptr);
 
         var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray(bundledAssemblyArrayPtr);
-        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator);
+        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, BootstrapLogger);
         var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(BootstrapLogger);
-        var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
+        var registry = new CompileTimePatchRegistry();
+        // var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
+        /*
         var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, BootstrapLogger);
 
         var modLocator = ModLocator = new ModLocator(PathSettings, BootstrapLogger);
         var modRegistry = ModRegistry = modLocator.LocateMods();
-        
+
         var currentLoadingState = CurrentLoadingState = new CurrentLoadingState();
         var assemblyResolverSetup = AssemblyResolverSetup = new AppDomainAssemblyResolverSetup(currentLoadingState, PathSettings, BootstrapLogger);
-        
-        
+        */
     }
 }

@@ -51,8 +51,15 @@ private:
 };
 
 
-template <typename F>
-deferred_call<F> defer(F&& f)
+template <class F>
+[[nodiscard]] auto make_deferred(F&& f)
+    -> deferred_call<std::decay_t<F>>
 {
-    return deferred_call<F>(std::forward<F>(f));
+    return deferred_call<std::decay_t<F>>(std::forward<F>(f));
 }
+
+// --- macro sugar to allow: defer([&]{ ... });
+#define DEFER_CONCAT_IMPL(x,y) x##y
+#define DEFER_CONCAT(x,y)      DEFER_CONCAT_IMPL(x,y)
+#define DEFER(...) \
+auto DEFER_CONCAT(_defer_, __LINE__) = ::make_deferred(__VA_ARGS__)
