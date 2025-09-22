@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net472</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -11,6 +11,7 @@
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <RootNamespace>ReadyM.Loader.Wukong.Bootstrap</RootNamespace>
         <InvariantGlobalization>true</InvariantGlobalization>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>

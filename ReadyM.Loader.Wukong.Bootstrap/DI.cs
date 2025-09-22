@@ -9,7 +9,7 @@ using ReadyM.Loader.Wukong.Bootstrap.Preprocess;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
-public class DI
+public sealed class DI
 {
     public static readonly DI Instance = new();
     
