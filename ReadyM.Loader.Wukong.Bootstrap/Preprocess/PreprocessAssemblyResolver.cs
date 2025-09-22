@@ -3,9 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
-using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Bootstrap.Registry;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
-namespace PreludeLib.Tests.Preprocess;
+namespace ReadyM.Loader.Wukong.Bootstrap.Preprocess;
 
 public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
 {
@@ -19,14 +20,17 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         public bool IsDirty;
         public bool IsBundled => BundledItemPtr != null;
     }
-   
+
     private readonly DefaultAssemblyResolver _fallbackResolver = new();
+
     private readonly GlibAllocator _allocator;
     private readonly List<Entry> _entries = [];
     private readonly Dictionary<string, int> _entryByName = [];
-    
-    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator, ILogger logger)
+    private readonly ILogger _logger;
+
+    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator, PathSettings pathSettings, ModRegistry modRegistry, ILogger logger)
     {
+        _logger = logger;
         _allocator = allocator;
         
         for (var itemPtr = array.FirstItemPtr; *itemPtr != null; itemPtr++)
@@ -52,16 +56,33 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
             _entries.Add(entry);
             _entryByName.Add(name, entryIndex);
         }
+        
+        _fallbackResolver.AddSearchDirectory(pathSettings.LoaderDir);
+        _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.LoaderDir, "Overrides"));
+        _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.ModDir, "Common"));
+        _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.ModDir, "Overrides"));
+        
+        foreach (var dir in modRegistry.ModDirs)
+        {
+            var modMeta = modRegistry.MetaByDir[dir];
+            if (modMeta.Disabled)
+                continue;
+            
+            _fallbackResolver.AddSearchDirectory(dir);
+            foreach (var recurDir in Directory.EnumerateDirectories(dir, "*", SearchOption.AllDirectories))
+            {
+                _fallbackResolver.AddSearchDirectory(recurDir);
+            }
+        }
     }
     
-    private void AddBundled(AssemblyDefinition asmDef)
+    private void AddEntry(AssemblyDefinition asmDef)
     {
         Entry entry;
         if (_entryByName.TryGetValue(asmDef.Name.Name, out var entryIndex))
         {
             entry = _entries[entryIndex];
             entry.AssemblyDef = asmDef;
-            entry.IsDirty = true;
             _entries[entryIndex] = entry;
         }
         else
@@ -72,7 +93,6 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
                 Location = asmDef.MainModule.FileName,
                 AssemblyDef = asmDef,
                 BundledItemPtr = null!,
-                IsDirty = true,
             };
             _entries.Add(entry);
             _entryByName.Add(asmDef.Name.Name, entryIndex);
@@ -114,11 +134,15 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
 
     public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
     {
+        _logger.LogDebug("Resolving assembly {Name}", name.Name);
         if (TryGetBundled(name.Name, out var asmDef))
+        {
+            _logger.LogDebug("Resolved assembly {Name} from bundled", name.Name);
             return asmDef;
+        }
         
         asmDef = _fallbackResolver.Resolve(name, parameters);
-        AddBundled(asmDef);
+        AddEntry(asmDef);
         return asmDef!;
     }
 

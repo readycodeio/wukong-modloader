@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace ReadyM.Loader.Wukong.Bootstrap;
+namespace ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 public class PathSettingsFactory(IpcHelper ipcHelper, ILogger logger)
 {

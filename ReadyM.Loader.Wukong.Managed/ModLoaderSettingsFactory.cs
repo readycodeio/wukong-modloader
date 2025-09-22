@@ -1,6 +1,6 @@
 using IniParser;
 using Microsoft.Extensions.Logging;
-using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Managed;
 

@@ -1,9 +1,10 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
-public class AppDomainAssemblyResolverSetup(CurrentLoadingState currentLoadingState, PathSettings settings, ILogger logger)
+public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, PathSettings settings, ILogger logger)
 {
     public void Setup()
     {

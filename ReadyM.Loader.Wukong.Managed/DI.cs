@@ -1,6 +1,8 @@
 ﻿using CSharpManager;
 using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Bootstrap.Registry;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 using ReadyM.Loader.Wukong.Managed.Unreal;
 
 namespace ReadyM.Loader.Wukong.Managed;

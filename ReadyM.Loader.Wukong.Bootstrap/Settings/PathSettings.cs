@@ -1,4 +1,4 @@
-namespace ReadyM.Loader.Wukong.Bootstrap;
+namespace ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 public class PathSettings(string baseDir, string? modDirOverride)
 {

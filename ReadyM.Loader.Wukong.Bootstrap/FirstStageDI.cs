@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Win32.SafeHandles;
 using ReadyM.Loader.Wukong.Bootstrap.Logging;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
@@ -19,7 +20,7 @@ public class FirstStageDI
     public ILogger BootstrapLogger { get; private set; } = null!;
 
     public CurrentLoadingState CurrentLoadingState = null!;
-    public AppDomainAssemblyResolverSetup AssemblyResolverSetup = null!;
+    public AssemblyResolverSetup AssemblyResolverSetup = null!;
     
     public void Init(IntPtr logFileHandlePtr)
     {

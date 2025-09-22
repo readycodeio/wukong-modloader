@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Mono.Cecil;
 using PreludeLib.CompileTime.Public;
-using PreludeLib.Tests.Preprocess;
+using ReadyM.Loader.Wukong.Bootstrap.Registry;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Preprocess;
 

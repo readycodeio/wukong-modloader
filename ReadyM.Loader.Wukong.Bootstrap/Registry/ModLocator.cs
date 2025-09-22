@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
-namespace ReadyM.Loader.Wukong.Bootstrap;
+namespace ReadyM.Loader.Wukong.Bootstrap.Registry;
 
 public class ModLocator(PathSettings pathSettings, ILogger logger)
 {

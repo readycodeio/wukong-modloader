@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace PreludeLib.Tests.Preprocess;
+namespace ReadyM.Loader.Wukong.Bootstrap.Preprocess;
 
 public class GlibAllocator(IntPtr glibNew0Ptr)
 {

@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
-namespace ReadyM.Loader.Wukong.Bootstrap;
+namespace ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 /// <summary>
 /// Copied from the mod. TODO: Shared project

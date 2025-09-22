@@ -2,7 +2,8 @@
 using CSharpModBase;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
-using ReadyM.Loader.Wukong.Bootstrap;
+using ReadyM.Loader.Wukong.Bootstrap.Registry;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 using ReadyM.Loader.Wukong.Managed.Debugger;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
 
