@@ -2,7 +2,6 @@
 using ReadyM.Loader.Wukong.Bootstrap;
 using UnrealEngine.Runtime;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;
-using BootstrapDI = ReadyM.Loader.Wukong.Bootstrap.DI;
 
 namespace ReadyM.Loader.Wukong.Managed;
 
@@ -10,7 +9,7 @@ namespace ReadyM.Loader.Wukong.Managed;
 public static class EntryPoint
 {
     // ReSharper disable once UnusedMember.Global
-    public static void Init(BootstrapDI bootstrapDI)
+    public static void Init(Bootstrap.DI bootstrapDI)
     {
         DI.Instance.Init(bootstrapDI);
         

@@ -1,26 +1,18 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Win32.SafeHandles;
 using PreludeLib.CompileTime.Backend.WeaverCallback;
 using PreludeLib.CompileTime.Public;
-using PreludeLib.CompileTime.Registry;
 using PreludeLib.Tests.Preprocess;
 using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using ReadyM.Loader.Wukong.Bootstrap.Preprocess;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
-public sealed class DI
+public class DI
 {
     public static readonly DI Instance = new();
-    
-    public IpcHelper IpcHelper { get; private set; } = null!;
-    public PathSettingsFactory PathSettingsFactory { get; private set; } = null!;
-    public PathSettings PathSettings { get; private set; } = null!;
-    public LoggerFactoryProvider LoggerProvider { get; private set; } = null!;
-    public ILoggerFactory LoggerFactory { get; private set; } = null!;
-    public EarlyLogger EarlyLogger { get; private set; } = null!;
-    public ILogger BootstrapLogger { get; private set; } = null!;
 
+    private FirstStageDI _firstStage = null!;
+    
     public MonoBundledAssemblyArray BundledAssemblyArray { get; private set; } = default;
     
     public GlibAllocator Allocator { get; private set; } = null!;
@@ -31,46 +23,34 @@ public sealed class DI
     
     public ModLocator ModLocator { get; private set; } = null!;
     public ModRegistry ModRegistry { get; private set; } = null!;
+
+    public LoggerFactoryProvider LoggerProvider
+        => _firstStage.LoggerProvider;
+
+    public CurrentLoadingState CurrentLoadingState
+        => _firstStage.CurrentLoadingState;
+
+    public PathSettings PathSettings
+        => _firstStage.PathSettings;
     
-    public CurrentLoadingState CurrentLoadingState { get; private set; } = null!;
-    public AppDomainAssemblyResolverSetup AssemblyResolverSetup { get; private set; } = null!;
+    public ILogger BootstrapLogger
+        => _firstStage.BootstrapLogger;
 
-    public void InitLogging(IntPtr logFileHandlePtr)
+    public unsafe void Init(FirstStageDI firstStageDI, IntPtr bundledAssemblyArrayPtr, IntPtr glibNew0Ptr)
     {
-        var earlyLogger = EarlyLogger = new EarlyLogger();
+        _firstStage = firstStageDI;
         
-        var ipcHelper = IpcHelper = new IpcHelper(earlyLogger);
-        var pathSettingsFactory = PathSettingsFactory = new PathSettingsFactory(ipcHelper, earlyLogger);
-        var pathSettings = PathSettings = pathSettingsFactory.CreateSettings();
+        firstStageDI.BootstrapLogger.LogDebug("DI Init started");
         
-        var logFileHandle = new SafeFileHandle(logFileHandlePtr, ownsHandle: false);
-
-        var loggerProvider = LoggerProvider = new LoggerFactoryProvider(Guid.NewGuid(), logFileHandle, pathSettings);
-        Log.Provider = loggerProvider;
-
-        var loggerFactory = LoggerFactory = loggerProvider.CreateLoggerFactory(true, true);
-        var bootstrapLogger = BootstrapLogger = loggerFactory.CreateLogger("Bootstrap");
-        
-        earlyLogger.Attach(bootstrapLogger);
-    }
-
-    public unsafe void Init(MonoBundledAssembly** bundledAssemblyArrayPtr, IntPtr glibNew0Ptr)
-    {
-        BootstrapLogger.LogDebug("DI Init started");
         var allocator = Allocator = new GlibAllocator(glibNew0Ptr);
 
-        var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray(bundledAssemblyArrayPtr);
+        var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray((MonoBundledAssembly**)bundledAssemblyArrayPtr);
         var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, BootstrapLogger);
         var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(BootstrapLogger);
-        var registry = new CompileTimePatchRegistry();
         var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
-        
         var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, BootstrapLogger);
 
         var modLocator = ModLocator = new ModLocator(PathSettings, BootstrapLogger);
         var modRegistry = ModRegistry = modLocator.LocateMods();
-
-        var currentLoadingState = CurrentLoadingState = new CurrentLoadingState();
-        var assemblyResolverSetup = AssemblyResolverSetup = new AppDomainAssemblyResolverSetup(currentLoadingState, PathSettings, BootstrapLogger);
     }
 }

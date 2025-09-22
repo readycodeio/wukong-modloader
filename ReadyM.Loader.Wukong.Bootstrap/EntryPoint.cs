@@ -10,22 +10,21 @@ public static class EntryPoint
     private static Type? _managedEntryPoint;
 
     // ReSharper disable once UnusedMember.Global
-    public static void InitLogging(long logFileHandlePtr)
+    public static void FirstStageBootstrap(long logFileHandlePtr)
     {
-        DI.Instance.InitLogging(new IntPtr(logFileHandlePtr));
-        DI.Instance.BootstrapLogger.LogDebug("Logging initialized.");
+        FirstStageDI.Instance.Init(new IntPtr(logFileHandlePtr));
+        FirstStageDI.Instance.AssemblyResolverSetup.Setup();
     }
 
     // ReSharper disable once UnusedMember.Global
-    public static unsafe void Preprocess(long bundledAssemblyArrayPtr, long glibNew0Ptr)
+    public static void SecondStageBootstrap(long bundledAssemblyArrayPtr, long glibNew0Ptr)
     {
-        DI.Instance.BootstrapLogger.LogDebug("Initializing DI...");
-        DI.Instance.BootstrapLogger.LogDebug("Argument 0: {Arg0}", bundledAssemblyArrayPtr);
-        DI.Instance.BootstrapLogger.LogDebug("Argument 1: {Arg1}", glibNew0Ptr);
+        DI.Instance.Init(FirstStageDI.Instance, new IntPtr(bundledAssemblyArrayPtr), new IntPtr(glibNew0Ptr));
+    }
 
-        DI.Instance.Init((MonoBundledAssembly**)bundledAssemblyArrayPtr, new IntPtr(glibNew0Ptr));
-        DI.Instance.BootstrapLogger.LogDebug("Initialization complete.");
-        
+    // ReSharper disable once UnusedMember.Global
+    public static void Preprocess()
+    {
         DI.Instance.BootstrapLogger.LogDebug("Preprocessing assemblies...");
         DI.Instance.AssemblyPreprocessor.Preprocess(DI.Instance.ModRegistry);
     }
@@ -33,17 +32,7 @@ public static class EntryPoint
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
-        DI.Instance.BootstrapLogger.LogDebug("Bootstrapping...");
-        
-        try
-        {
-            DI.Instance.AssemblyResolverSetup.Setup();
-        }
-        catch (Exception ex)
-        {
-            DI.Instance.BootstrapLogger.LogError(ex, "Error while bootstrapping");
-            return;
-        }
+        DI.Instance.BootstrapLogger.LogDebug("Loading mods...");
 
         try
         {
@@ -78,13 +67,13 @@ public static class EntryPoint
             DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking Init method");
         }
 
-        DI.Instance.BootstrapLogger.LogDebug("Bootstrapping complete.");
+        DI.Instance.BootstrapLogger.LogDebug("Loading mods complete.");
     }
     
     // ReSharper disable once UnusedMember.Global
     public static void LateInit()
     {
-        DI.Instance.BootstrapLogger.LogDebug("Late bootstrapping...");
+        DI.Instance.BootstrapLogger.LogDebug("Late loading mods...");
 
         var lateInitMethod = _managedEntryPoint!.GetMethod("LateInit");
         if (lateInitMethod == null)
@@ -102,6 +91,6 @@ public static class EntryPoint
             DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking LateInit method");
         }
 
-        DI.Instance.BootstrapLogger.LogDebug("Late bootstrapping complete.");
+        DI.Instance.BootstrapLogger.LogDebug("Late loading mods complete.");
     }
 }
