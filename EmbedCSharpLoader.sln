@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoMod.Utils", "HarmonyPre
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoMod.SourceGen.Internal", "HarmonyPrepatcher\src\Harmony\LocalMonoMod\src\MonoMod.SourceGen.Internal\MonoMod.SourceGen.Internal.csproj", "{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadyM.Loader.Executable", "ReadyM.Loader.Executable\ReadyM.Loader.Executable.csproj", "{370963EF-3558-45D1-A449-9409BC4079B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -141,5 +143,14 @@ Global
 		{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}.Release|x64.ActiveCfg = Release|Any CPU
 		{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}.Release|x64.Build.0 = Release|Any CPU
 		{8ECC3919-9F65-4A39-B57E-E99A3837DCD0}.Release|x64.ActiveCfg = Release|Any CPU
+		{8ECC3919-9F65-4A39-B57E-E99A3837DCD0}.Release|x64.Build.0 = Release|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|Win32.Build.0 = Debug|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Release|Win32.ActiveCfg = Release|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Release|Win32.Build.0 = Release|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{370963EF-3558-45D1-A449-9409BC4079B0}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

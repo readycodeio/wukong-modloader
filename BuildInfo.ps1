@@ -8,7 +8,7 @@ $nativeSourceDir = "x64/$Configuration"
 $bootstrapSourceDir = "ReadyM.Loader.Wukong.Bootstrap/bin/$Configuration/netstandard2.0/win-x64"
 $csharpModBaseSourceDir = "CSharpModBase/bin/$Configuration/netstandard2.0"
 $csharpModBaseV2SourceDir = "CSharpModBaseV2/bin/$Configuration/netstandard2.0"
-$managedSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
+$managedSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $overridesSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
 $pakSourceDir = "PakFiles"
 
@@ -37,7 +37,8 @@ $csharpModBaseFiles = @(
     "SharpDX.XInput.dll",
     "MonoMod.Backports.dll",
     "MonoMod.ILHelpers.dll",
-    "MonoMod.Utils.dll"
+    "MonoMod.Utils.dll",
+    "PreludeLib.dll"
 )
 $csharpModBaseV2Files = @(
     "CSharpModBaseV2.dll",
@@ -83,8 +84,7 @@ $overridesFiles = @(
     "Mono.Cecil.dll",
     "Mono.Cecil.Mdb.dll",
     "Mono.Cecil.Pdb.dll", 
-    "Mono.Cecil.Rocks.dll",
-    "PreludeLib.dll"
+    "Mono.Cecil.Rocks.dll"
 )
 $pakFiles = @(
     "WukongMp.pak"

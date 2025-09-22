@@ -63,8 +63,8 @@ public sealed class DI
         var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, BootstrapLogger);
         var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(BootstrapLogger);
         var registry = new CompileTimePatchRegistry();
-        // var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
-        /*
+        var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
+        
         var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, BootstrapLogger);
 
         var modLocator = ModLocator = new ModLocator(PathSettings, BootstrapLogger);
@@ -72,6 +72,5 @@ public sealed class DI
 
         var currentLoadingState = CurrentLoadingState = new CurrentLoadingState();
         var assemblyResolverSetup = AssemblyResolverSetup = new AppDomainAssemblyResolverSetup(currentLoadingState, PathSettings, BootstrapLogger);
-        */
     }
 }
