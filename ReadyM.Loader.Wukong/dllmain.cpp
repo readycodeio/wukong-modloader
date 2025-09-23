@@ -137,7 +137,29 @@ static bool bootstrap_init()
 
     exc = nullptr;
 
-    auto second_stage_param_0 = reinterpret_cast<long long>(*get_bundles_ptr());
+    void*** bundled_asm_ptr = get_bundles_ptr();
+    // check if it's possible to overwrite the value of *bundled_asm_ptr
+    try
+    {
+        DWORD oldProtect;
+        if (!VirtualProtect(bundled_asm_ptr, sizeof(void**), PAGE_READWRITE, &oldProtect))
+        {
+            log_error("VirtualProtect failed to change memory protection.");
+            return false;
+        }
+        DEFER([&] { VirtualProtect(bundled_asm_ptr, sizeof(void**), oldProtect, &oldProtect); });
+
+        // write check
+        *bundled_asm_ptr = *bundled_asm_ptr;
+        log_debug("Successfully wrote to bundled_asm_ptr.");
+    }
+    catch (...)
+    {
+        log_error("Cannot write to bundled_asm_ptr, likely due to memory protection.");
+        return false;
+    }
+
+    auto second_stage_param_0 = reinterpret_cast<long long>(bundled_asm_ptr);
     auto second_stage_param_1 = reinterpret_cast<long long>(get_glib_new0_ptr());
     void* second_stage_params[3] = {
         &second_stage_param_0,

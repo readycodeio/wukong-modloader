@@ -50,7 +50,7 @@ public class DI
 
         var compileTimeLogger = firstStageDI.LoggerFactory.CreateLogger("CompileTime");
         
-        var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray((MonoBundledAssembly**)bundledAssemblyArrayPtr);
+        var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray((MonoBundledAssembly***)bundledAssemblyArrayPtr);
         var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, PathSettings, modRegistry,  compileTimeLogger);
         var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(compileTimeLogger);
         var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, compileTimeLogger);
