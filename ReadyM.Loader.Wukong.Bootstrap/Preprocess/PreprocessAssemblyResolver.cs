@@ -195,6 +195,18 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
                 var newData = _allocator.Alloc(newSize);
                 Marshal.Copy(stream.GetBuffer(), 0, newData, newSize);
 
+#if DEBUG
+                // also write to temp file and log path for ILSpy inspection
+                var tempPath = Path.Combine(Path.GetTempPath(), entry.AssemblyDef.Name.Name + "_patched.dll");
+                using (var fileStream = File.Open(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    stream.Position = 0;
+                    stream.CopyTo(fileStream);
+                }
+
+                _logger.LogDebug("Wrote patched assembly {AssemblyName} to {Path} for inspection", entry.AssemblyDef.Name, tempPath);
+#endif
+
                 // B. Allocate a NEW, writable struct for the bundled assembly metadata.
                 var newBundledItem = (MonoBundledAssembly*)_allocator.Alloc(sizeof(MonoBundledAssembly));
 
