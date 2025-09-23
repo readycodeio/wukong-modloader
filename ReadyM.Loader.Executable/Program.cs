@@ -1,4 +1,8 @@
 using HarmonyLib;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Mono.Cecil;
 using PreludeLib.CompileTime.Backend.WeaverCallback;
 using PreludeLib.CompileTime.Public;
 using PreludeLib.Runtime.Backend.HarmonyDetour;
@@ -21,6 +25,11 @@ namespace ReadyM.Loader.Executable
             var runtimePreludeBackend1 = new RuntimeHarmonyBackend(null!);
             var runtimePreludeBackend2 = new RuntimeWeaverBackend(null!);
             var runtimePrelude = new RuntimePrelude(boolFlag ? runtimePreludeBackend1 : runtimePreludeBackend2, null!);
+            var config = new ConfigurationBuilder();
+            var logger = new ServiceCollection()
+                .AddLogging(builder => builder.AddConsole());
+            AssemblyDefinition cecil = null!;
+            IniParser.FileIniDataParser parser = null!;
         }
     }
 }
