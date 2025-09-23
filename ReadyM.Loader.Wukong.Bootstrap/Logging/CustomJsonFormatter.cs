@@ -10,7 +10,7 @@ namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-json")
 {
-    private readonly JsonSerializerOptions _options = new(JsonSerializerOptions.Default)
+    private JsonSerializerOptions _options = new(JsonSerializerOptions.Default)
     {
         WriteIndented = false,
     };
@@ -19,6 +19,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
 
     public void RegisterConverter(JsonConverter converter)
     {
+        _options = new JsonSerializerOptions(_options);
         _options.Converters.Add(converter);
     }
     

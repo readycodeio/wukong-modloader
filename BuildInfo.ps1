@@ -5,12 +5,14 @@ $zipName = "Loader"
 
 # Define the source and destination directories
 $nativeSourceDir = "x64/$Configuration"
-$overridesSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
+$overridesSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $toplevelSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
+$facadesSourceDir = "ReadyM.Loader.Executable/Facades"
 $pakSourceDir = "PakFiles"
 
 $nativeDestDir = "Binaries/Win64"
 $overridesDestDir = "Binaries/Win64/CSharpLoader/Overrides"
+$facadesDestDir = "Binaries/Win64/CSharpLoader/Overrides"
 $toplevelDestDir = "Binaries/Win64/CSharpLoader"
 $pakDestDir = "Content/Paks/LogicMods"
 
@@ -18,22 +20,6 @@ $pakDestDir = "Content/Paks/LogicMods"
 $nativeFiles = @(
     "version.dll",
     @("version.pdb", $true)
-)
-$toplevelFiles = @(
-    "0Harmony.dll",
-    "PreludeLib.dll",
-    "PreludeLib.pdb",
-    "SharpDX.dll", 
-    "SharpDX.XInput.dll",
-    "CSharpModBase.dll",
-    @("CSharpModBase.pdb", $true),
-    "CSharpModBaseV2.dll",
-    @("CSharpModBaseV2.pdb", $true),
-    "ReadyM.Loader.Wukong.Bootstrap.dll",
-    @("ReadyM.Loader.Wukong.Bootstrap.pdb", $true),
-    "ReadyM.Loader.Wukong.Managed.dll",
-    @("ReadyM.Loader.Wukong.Managed.pdb", $true),
-    "INIFileParser.dll"
 )
 $overridesFiles = @(
     "Microsoft.Bcl.AsyncInterfaces.dll",
@@ -49,8 +35,11 @@ $overridesFiles = @(
     "Microsoft.Extensions.Options.dll",
     "Microsoft.Extensions.Options.ConfigurationExtensions.dll",
     "Microsoft.Extensions.Primitives.dll"
+    "Mono.Cecil.dll",
+    "Mono.Cecil.Mdb.dll",
+    "Mono.Cecil.Pdb.dll", 
+    "Mono.Cecil.Rocks.dll"
     "System.Buffers.dll",
-    "System.ComponentModel.Annotations.dll",
     "System.Diagnostics.DiagnosticSource.dll",
     "System.IO.Pipelines.dll",
     "System.Memory.dll",
@@ -59,10 +48,26 @@ $overridesFiles = @(
     "System.Text.Encodings.Web.dll",
     "System.Text.Json.dll",
     "System.Threading.Tasks.Extensions.dll",
-    "Mono.Cecil.dll",
-    "Mono.Cecil.Mdb.dll",
-    "Mono.Cecil.Pdb.dll", 
-    "Mono.Cecil.Rocks.dll"
+    "System.ValueTuple.dll"
+)
+$facadesFiles = @(
+    "System.Runtime.dll"
+)
+$toplevelFiles = @(
+    "0Harmony.dll",
+    "PreludeLib.dll",
+    @("PreludeLib.pdb", $true),
+    "SharpDX.dll", 
+    "SharpDX.XInput.dll",
+    "CSharpModBase.dll",
+    @("CSharpModBase.pdb", $true),
+    "CSharpModBaseV2.dll",
+    @("CSharpModBaseV2.pdb", $true),
+    "ReadyM.Loader.Wukong.Bootstrap.dll",
+    @("ReadyM.Loader.Wukong.Bootstrap.pdb", $true),
+    "ReadyM.Loader.Wukong.Managed.dll",
+    @("ReadyM.Loader.Wukong.Managed.pdb", $true),
+    "INIFileParser.dll"
 )
 $pakFiles = @(
     "WukongMp.pak"
@@ -70,8 +75,9 @@ $pakFiles = @(
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
-    @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
     @($overridesFiles, $overridesSourceDir, $overridesDestDir),
+    @($facadesFiles, $facadesSourceDir, $facadesDestDir),
+    @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
     @($pakFiles, $pakSourceDir, $pakDestDir)
 )
 

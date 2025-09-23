@@ -27,7 +27,13 @@ public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, Path
     private Assembly? TryLoadDll(string path)
     {
         logger.LogDebug("Trying to load from: {Path}", path);
-        if (File.Exists(path))
+        var patchedPath = path.Replace(".dll", "_patched.dll");
+        if (File.Exists(patchedPath))
+        {
+            logger.LogDebug("Success (patched)");
+            return Assembly.LoadFrom(patchedPath);
+        }
+        else if (File.Exists(path))
         {
             logger.LogDebug("Success");
             return Assembly.LoadFrom(path);

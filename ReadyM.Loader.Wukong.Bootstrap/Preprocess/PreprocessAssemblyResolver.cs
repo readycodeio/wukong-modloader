@@ -15,6 +15,7 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         public AssemblyDefinition? AssemblyDef;
 
         public string? Location;
+        public string? PatchedLocation;
         public MonoBundledAssembly* BundledItemPtr;
  
         public bool IsDirty;
@@ -37,9 +38,14 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         {
             var item = *itemPtr;
             
-            var name = Marshal.PtrToStringAnsi(new IntPtr(item->name));
-            if (name == null)
+            var dllName = Marshal.PtrToStringAnsi(new IntPtr(item->name));
+            if (dllName  == null)
                 continue;
+
+            var name = dllName;
+            if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - ".dll".Length);
+            
             if (_entryByName.ContainsKey(name))
                 continue;
 
@@ -76,10 +82,9 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         }
     }
     
-    private void AddEntry(AssemblyDefinition asmDef)
+    private void AddEntry(AssemblyDefinition asmDef, out Entry entry, out int entryIndex)
     {
-        Entry entry;
-        if (_entryByName.TryGetValue(asmDef.Name.Name, out var entryIndex))
+        if (_entryByName.TryGetValue(asmDef.Name.Name, out entryIndex))
         {
             entry = _entries[entryIndex];
             entry.AssemblyDef = asmDef;
@@ -134,15 +139,13 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
 
     public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
     {
-        _logger.LogDebug("Resolving assembly {Name}", name.Name);
         if (TryGetBundled(name.Name, out var asmDef))
         {
-            _logger.LogDebug("Resolved assembly {Name} from bundled", name.Name);
             return asmDef;
         }
         
         asmDef = _fallbackResolver.Resolve(name, parameters);
-        AddEntry(asmDef);
+        AddEntry(asmDef, out _, out _);
         return asmDef!;
     }
 
@@ -165,6 +168,7 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
             {
                 stream.Position = 0;
                 entry.AssemblyDef!.Write(stream);
+                _logger.LogInformation("Writing patched assembly {AssemblyName} to memory", entry.AssemblyDef.Name);
                 var newSize = (int)stream.Position;
                 var newData = _allocator.Alloc(newSize);
                 Marshal.Copy(stream.GetBuffer(), 0, newData, newSize);
@@ -177,7 +181,12 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
             else
             {
                 Debug.Assert(entry.Location != null);
-                entry.AssemblyDef!.Write();
+                if (entry.PatchedLocation == null)
+                {
+                    entry.PatchedLocation = Path.Combine(Path.GetDirectoryName(entry.Location)!, Path.GetFileNameWithoutExtension(entry.Location) + "_patched.dll");
+                }
+                _logger.LogInformation("Writing patched assembly {AssemblyName} to {Path}", entry.AssemblyDef!.Name, entry.PatchedLocation);
+                entry.AssemblyDef!.Write(entry.PatchedLocation);
             }
             
             _entries[i] = entry;
@@ -189,5 +198,12 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         _fallbackResolver.Dispose();
         _entries.Clear();
         _entryByName.Clear();
+    }
+
+    public void SetDirty(AssemblyDefinition patchedAsmDef)
+    {
+        AddEntry(patchedAsmDef, out var entry, out var entryIndex);
+        entry.IsDirty = true;
+        _entries[entryIndex] = entry;
     }
 }

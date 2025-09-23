@@ -48,10 +48,12 @@ public class DI
         var modLocator = ModLocator = new ModLocator(PathSettings, BootstrapLogger);
         var modRegistry = ModRegistry = modLocator.LocateMods();
 
+        var compileTimeLogger = firstStageDI.LoggerFactory.CreateLogger("CompileTime");
+        
         var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray((MonoBundledAssembly**)bundledAssemblyArrayPtr);
-        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, PathSettings, modRegistry,  BootstrapLogger);
-        var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(BootstrapLogger);
-        var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, BootstrapLogger);
-        var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, BootstrapLogger);
+        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, PathSettings, modRegistry,  compileTimeLogger);
+        var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(compileTimeLogger);
+        var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, compileTimeLogger);
+        var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, compileTimeLogger);
     }
 }

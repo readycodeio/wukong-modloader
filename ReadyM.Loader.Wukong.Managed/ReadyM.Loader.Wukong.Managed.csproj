@@ -9,7 +9,6 @@
         <DebugType>portable</DebugType>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <RootNamespace>ReadyM.Loader.Wukong.Managed</RootNamespace>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
     
     <Target Name="PrintBuildVersion" AfterTargets="AfterBuild">

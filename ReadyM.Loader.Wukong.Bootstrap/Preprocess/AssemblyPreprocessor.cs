@@ -17,13 +17,24 @@ public class AssemblyPreprocessor(PreprocessAssemblyResolver resolver, CompileTi
 
             logger.LogDebug("Preprocessing mod: {ModName}", modMeta.ModName);
             
-            var mainAsmName = Path.GetFileNameWithoutExtension(modMeta.MainAsmPath);
-            // NOTE: Thankfully the actual implementation ignores the version information, so we don't have to know
-            // it beforehand.
-            var mainAsmNameRef = new AssemblyNameReference(mainAsmName, new Version());
-            var mainAsmDef = resolver.Resolve(mainAsmNameRef);
+            foreach (var modAsmPath in modMeta.AllAsmPaths)
+            {
+                var modAsmName = Path.GetFileNameWithoutExtension(modAsmPath);
+                // NOTE: Thankfully the actual implementation ignores the version information, so we don't have to know
+                // it beforehand.
+                var modAsmNameRef = new AssemblyNameReference(modAsmName, new Version());
+                var modAsmDef = resolver.Resolve(modAsmNameRef);
 
-            prelude.ScanAndPatchAll(mainAsmDef);
+                prelude.ScanAndPatchAll(modAsmDef);
+            }
+        }
+        
+        prelude.Commit();
+
+        foreach (var patchedAsmDef in prelude.Backend.PatchedAssemblies)
+        {
+            logger.LogDebug("Marking assembly as dirty: {AsmName}", patchedAsmDef.Name.Name);
+            resolver.SetDirty(patchedAsmDef);
         }
         
         resolver.Save();
