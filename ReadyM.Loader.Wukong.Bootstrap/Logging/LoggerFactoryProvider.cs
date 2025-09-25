@@ -1,25 +1,27 @@
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32.SafeHandles;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 public class LoggerFactoryProvider : IDisposable
 {
-    private static readonly string JsonLoggerPath = $"{Settings.BaseDir}\\wukong-mp-logs";
-
     private readonly CustomJsonFormatter _jsonFormatter;
     private readonly CustomTextFormatter _textFormatter = new();
 
-    private readonly JsonLoggerWorker _worker = new(JsonLoggerPath);
+    private readonly JsonLoggerWorker _worker;
     private readonly List<ILoggerFactory> _loggerFactories = [];
     private readonly TextWriter _threadSafeLogFileWriter;
 
-    public LoggerFactoryProvider(Guid guid, SafeFileHandle logFileHandle)
+    public LoggerFactoryProvider(Guid guid, SafeFileHandle logFileHandle, PathSettings pathSettings)
     {
         var logFileStream = new FileStream(logFileHandle, FileAccess.Write);
         var logFileWriter = new StreamWriter(logFileStream);
         _threadSafeLogFileWriter = TextWriter.Synchronized(logFileWriter); 
-        
+     
+        var jsonLoggerPath = $"{pathSettings.BaseDir}\\wukong-mp-logs";
+        _worker = new JsonLoggerWorker(jsonLoggerPath);
         _jsonFormatter = new CustomJsonFormatter(guid);
     }
 
@@ -50,5 +52,10 @@ public class LoggerFactoryProvider : IDisposable
     {
         Console.Out.Flush();
         _threadSafeLogFileWriter.Flush();
+    }
+    
+    public void RegisterConverter(JsonConverter converter)
+    {
+        _jsonFormatter.RegisterConverter(converter);
     }
 }

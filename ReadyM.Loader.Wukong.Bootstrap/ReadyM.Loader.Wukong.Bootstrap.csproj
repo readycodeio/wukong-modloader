@@ -19,9 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Reference Include="UnrealEngine.Runtime">
-        <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
-      </Reference>
+      <ProjectReference Include="..\HarmonyPrepatcher\src\PreludeLib\PreludeLib.csproj" />
     </ItemGroup>
 
 </Project>

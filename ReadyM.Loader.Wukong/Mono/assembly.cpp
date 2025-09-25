@@ -167,7 +167,7 @@ bool intercept_register_bundled_assemblies(void (*callback)())
 }
 
 
-bool load_assembly_bundles(const std::vector<std::filesystem::path>& dirs)
+bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>& dirs)
 {
     auto old_bundles = get_mono_register_bundled_assemblies();
     std::vector<MonoBundledAssembly*> new_bundles_arr;
@@ -271,7 +271,7 @@ bool load_assembly_bundles(const std::vector<std::filesystem::path>& dirs)
         new_bundles_arr.push_back(old_bundle);
     }
 
-    auto new_bundles = new MonoBundledAssembly*[new_bundles_arr.size() + 1];
+    auto new_bundles = static_cast<MonoBundledAssembly**>(glib_new0(sizeof(MonoBundledAssembly*) * (new_bundles_arr.size() + 1)));
     for (size_t i = 0; i < new_bundles_arr.size(); ++i)
     {
         new_bundles[i] = new_bundles_arr[i];
