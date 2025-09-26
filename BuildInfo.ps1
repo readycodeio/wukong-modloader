@@ -11,9 +11,9 @@ $facadesSourceDir = "ReadyM.Loader.Executable/Facades"
 $pakSourceDir = "PakFiles"
 
 $nativeDestDir = "@GAME/Binaries/Win64"
-$overridesDestDir = "@APPDATA/ReadyM.Launcher/server_profiles/Black Myth Wukong/ReadyM_WukongMP_Cooperative/CSharpLoader/Overrides"
-$facadesDestDir = "@APPDATA/ReadyM.Launcher/server_profiles/Black Myth Wukong/ReadyM_WukongMP_Cooperative/CSharpLoader/Overrides"
-$toplevelDestDir = "@APPDATA/ReadyM.Launcher/server_profiles/Black Myth Wukong/ReadyM_WukongMP_Cooperative/CSharpLoader"
+$overridesDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader/Overrides"
+$facadesDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader/Overrides"
+$toplevelDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader"
 $pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
