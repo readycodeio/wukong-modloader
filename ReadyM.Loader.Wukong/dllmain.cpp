@@ -12,7 +12,7 @@
 #include "Config/debugger.h"
 #include "Config/flags.h"
 #include "Config/path.h"
-#include "EntryDll/version_dll.h"
+#include "EntryDll/dxgi_dll.h"
 #include "Logger/logger.h"
 #include "Mono/appdomain.h"
 #include "Mono/assembly.h"
@@ -566,14 +566,6 @@ static bool init_embed_runtime()
     auto path = get_handshake_file_path();
     if (!std::filesystem::exists(path))
     {
-        // create a file in the same location to indicate failure
-        std::ofstream file("readym_failure.txt", std::ios::trunc);
-        if (file.is_open())
-        {
-            file << "Handshake file not found. Ensure you launched the game via ReadyM Launcher.";
-            file.close();
-        }
-
         return false;
     }
 
@@ -600,7 +592,6 @@ static bool init_embed_runtime()
     else
     {
         log_debug(L"Mod folder: {}", get_mod_dir().c_str());
-        return false;
     }
 
     auto enable_jit_flag = load_enable_jit();

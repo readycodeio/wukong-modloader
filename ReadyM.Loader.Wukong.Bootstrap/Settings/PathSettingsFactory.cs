@@ -9,22 +9,33 @@ public class PathSettingsFactory(IpcHelper ipcHelper, ILogger logger)
         var baseDir = Directory.GetCurrentDirectory();
         if (!baseDir.EndsWith("Win64"))
             baseDir = Path.Combine(baseDir, "b1\\Binaries\\Win64");
-        
+
         GetModFolderOverride(out var modDirOverride);
+
+        if (modDirOverride != null)
+        {
+            baseDir = Path.GetDirectoryName(Path.GetDirectoryName(modDirOverride))!;
+            logger.LogDebug("Base directory (from mod override): {Path}", baseDir);
+        }
+
         var pathSettings = new PathSettings(baseDir, modDirOverride);
 
         if (pathSettings.ModDirOverride != null)
+        {
             logger.LogDebug("Mod folder override: {Path}", pathSettings.ModDir);
+        }
         else
+        {
             logger.LogDebug("Mod folder: {Path}", pathSettings.ModDir);
-        
+        }
+
         return pathSettings;
     }
-    
+
     private void GetModFolderOverride(out string? modDirOverride)
     {
         modDirOverride = null;
-        
+
         var ipcHandshakeFile = ipcHelper.ReadIpcHandshakeFile();
 
         if (ipcHandshakeFile.TryGetValue("MOD_FOLDER", out var modFolder))
