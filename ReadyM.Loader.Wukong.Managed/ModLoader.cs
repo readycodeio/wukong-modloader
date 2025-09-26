@@ -229,8 +229,7 @@ public class ModLoader
                             continue;
                         }
 
-                        var mod = modUntyped as ICSharpMod;
-                        if (mod == null)
+                        if (modUntyped is not ICSharpMod mod)
                         {
                             _logger.LogError("Instance of {TypeName} is not ICSharpMod", type.FullName);
                             continue;
@@ -282,6 +281,9 @@ public class ModLoader
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
             
+            if (modLoadState.LoadAsmPath is null)
+                continue;
+            
             var modMeta = _modRegistry.MetaByDir[dir];
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -311,6 +313,10 @@ public class ModLoader
             var modMeta = _modRegistry.MetaByDir[dir];
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
+            
+            if (modLoadState.LoadAsmPath is null)
+                continue;
+            
 
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -425,7 +431,7 @@ public class ModLoader
             _logger.LogDebug("Starting late init thread");
             try
             {
-                LateInitMods(false, null);
+                LateInitMods(false);
             }
             catch (Exception ex)
             {

@@ -18,8 +18,8 @@ $pakDestDir = "Content/Paks/LogicMods"
 
 # Define the files to copy
 $nativeFiles = @(
-    "version.dll",
-    @("version.pdb", $true)
+    "dxgi.dll",
+    @("dxgi.pdb", $true)
 )
 $overridesFiles = @(
     "Microsoft.Bcl.AsyncInterfaces.dll",

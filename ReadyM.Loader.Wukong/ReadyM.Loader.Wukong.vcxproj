@@ -89,16 +89,16 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -189,7 +189,7 @@
     <ClCompile Include="Config\logger-config.cpp" />
     <ClCompile Include="Config\path.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="EntryDll\version_dll.cpp" />
+    <ClCompile Include="EntryDll\dxgi_dll.cpp" />
     <ClCompile Include="Logger\logger.cpp" />
     <ClCompile Include="Memory\common.cpp" />
     <ClCompile Include="Memory\patch.cpp" />
@@ -215,7 +215,7 @@
     <ClInclude Include="Config\flags.h" />
     <ClInclude Include="Config\logger-config.h" />
     <ClInclude Include="Config\path.h" />
-    <ClInclude Include="EntryDll\version_dll.h" />
+    <ClInclude Include="EntryDll\dxgi_dll.h" />
     <ClInclude Include="Logger\logger.h" />
     <ClInclude Include="Memory\common.h" />
     <ClInclude Include="Memory\patch.h" />
