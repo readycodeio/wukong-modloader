@@ -8,15 +8,20 @@ $nativeSourceDir = "x64/$Configuration"
 $overridesSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $toplevelSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $facadesSourceDir = "ReadyM.Loader.Executable/Facades"
+$originalSourceDir = "Original"
 $pakSourceDir = "PakFiles"
+$configSourceDir = "Config"
 
 $nativeDestDir = "@GAME/Binaries/Win64"
-$overridesDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader/Overrides"
-$facadesDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader/Overrides"
-$toplevelDestDir = "@APPDATA/ReadyM.Launcher/game_modes/Black Myth Wukong Co-op/CSharpLoader"
+$overridesDestDir = "@COOP/CSharpLoader/Overrides"
+$facadesDestDir = "@COOP/CSharpLoader/Overrides"
+$toplevelDestDir = "@COOP/CSharpLoader"
 $pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
+$originalNativeFiles = @(
+    "version.dll"
+)
 $nativeFiles = @(
     "dxgi.dll",
     @("dxgi.pdb", $true)
@@ -69,15 +74,21 @@ $toplevelFiles = @(
     @("ReadyM.Loader.Wukong.Managed.pdb", $true),
     "INIFileParser.dll"
 )
+$configFiles = @(
+    "b1cs.ini",
+    "debugger-agent.txt"
+)
 $pakFiles = @(
     "WukongMp.pak"
 )
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
+    @($originalNativeFiles, $originalSourceDir, $nativeDestDir),
     @($overridesFiles, $overridesSourceDir, $overridesDestDir),
     @($facadesFiles, $facadesSourceDir, $facadesDestDir),
     @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
+    @($configFiles, $configSourceDir, $toplevelDestDir),
     @($pakFiles, $pakSourceDir, $pakDestDir)
 )
 

@@ -456,7 +456,7 @@ std::wstring utf8_to_wide(const std::string& str)
 std::wstring get_handshake_file_path()
 {
     wchar_t* localAppData = nullptr;
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &localAppData)))
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &localAppData)))
     {
         std::wstring path = localAppData;
         CoTaskMemFree(localAppData);
@@ -526,7 +526,7 @@ static bool init_pak_loading()
 
 static bool init_embed_runtime()
 {
-    auto path = get_handshake_file_path();
+    const auto path = get_handshake_file_path();
     if (!std::filesystem::exists(path))
     {
         return false;
@@ -546,6 +546,14 @@ static bool init_embed_runtime()
     }
 
     auto env = parse_env_file(path);
+
+    // check if env["GAME_MODE"] is "co-op". Otherwise, exit early
+    // TODO: Migrate PvP to use this loader
+    if (!env.contains(L"GAME_MODE") || env[L"GAME_MODE"] != L"co-op")
+    {
+        log_info(L"GAME_MODE is not 'co-op'. Exiting CSharpLoader initialization.");
+        return false;
+    }
 
     // print the env map for debugging
     log_debug(L"Parsed environment variables from {}:", path);

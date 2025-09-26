@@ -28,7 +28,6 @@ if (-not $match) {
 $version = $match[0].Matches[0].Groups['ver'].Value
 Write-Output "Extracted version: $version"
 
-
 # 3. Prepare temporary output directory
 $outputRoot = Join-Path $scriptDir 'Output'
 if (-not (Test-Path $outputRoot)) {
@@ -51,13 +50,7 @@ foreach ($item in $allFiles) {
     CopyFiles $files $sourceDir $destDir
 }
 
-# 5. Create empty folder "Mods" under Binaries/Win64/CSharpLoader
-$emptyDir = Join-Path $destRoot "Binaries/Win64/CSharpLoader/Mods"
-if (-not (Test-Path $emptyDir)) {
-    New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
-}
-
-# 6. Zip files
+# 5. Zip files
 $zipName = "$zipName-$version.zip"
 $zipPath = Join-Path $outputRoot $zipName
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
