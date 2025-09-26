@@ -511,43 +511,6 @@ static std::unordered_map<std::wstring, std::wstring> parse_env_file(const std::
     return map;
 }
 
-static std::optional<std::wstring> try_get_mod_folder_override()
-{
-    auto path = get_handshake_file_path();
-    auto env = parse_env_file(path);
-
-    // print the env map for debugging
-    log_debug(L"Parsed environment variables from {}:", path);
-    for (const auto& [key, value] : env)
-    {
-        if (key == L"JWT_TOKEN")
-            continue; // skip logging the JWT for security reasons
-
-        log_debug(L"{}: {}", key, value);
-    }
-
-    if (env.contains(L"LAUNCHER_PID"))
-    {
-        DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
-        if (!is_launcher_process_still_running(pid, L"ReadyM.Launcher.exe"))
-        {
-            log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
-            return std::nullopt;
-        }
-    }
-
-    log_debug(L"Launcher process is running as expected.");
-
-    if (env.contains(L"MOD_FOLDER"))
-    {
-        std::wstring wmodfolder(env[L"MOD_FOLDER"].begin(), env[L"MOD_FOLDER"].end());
-        if (std::filesystem::exists(wmodfolder))
-            return wmodfolder;
-    }
-
-    return std::nullopt;
-}
-
 static bool init_pak_loading()
 {
     log_info("Patching Unreal Engine .pak signature checks");
@@ -582,7 +545,38 @@ static bool init_embed_runtime()
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
 
-    auto mod_dir_override = try_get_mod_folder_override();
+    auto env = parse_env_file(path);
+
+    // print the env map for debugging
+    log_debug(L"Parsed environment variables from {}:", path);
+    for (const auto& [key, value] : env)
+    {
+        if (key == L"JWT_TOKEN")
+            continue; // skip logging the JWT for security reasons
+
+        log_debug(L"{}: {}", key, value);
+    }
+
+    if (env.contains(L"LAUNCHER_PID"))
+    {
+        DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
+        if (!is_launcher_process_still_running(pid, L"ReadyM.Launcher.exe"))
+        {
+            log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
+            return false;
+        }
+
+        log_debug(L"Launcher process is running as expected.");
+    }
+
+    std::optional<std::wstring> mod_dir_override = std::nullopt;
+
+    if (env.contains(L"MOD_FOLDER"))
+    {
+        std::wstring wmodfolder(env[L"MOD_FOLDER"].begin(), env[L"MOD_FOLDER"].end());
+        if (std::filesystem::exists(wmodfolder))
+            mod_dir_override = wmodfolder;
+    }
 
     if (mod_dir_override.has_value())
     {
