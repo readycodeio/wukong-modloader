@@ -28,7 +28,7 @@ public static class EntryPoint
         DI.Instance.BootstrapLogger.LogDebug("Preprocessing assemblies...");
         DI.Instance.AssemblyPreprocessor.Preprocess(DI.Instance.ModRegistry);
     }
- 
+
     // ReSharper disable once UnusedMember.Global
     public static void Init()
     {
@@ -36,7 +36,7 @@ public static class EntryPoint
 
         try
         {
-            _loaderAssembly = Assembly.LoadFrom("CSharpLoader\\ReadyM.Loader.Wukong.Managed.dll");
+            _loaderAssembly = Assembly.LoadFrom(Path.Combine(DI.Instance.PathSettings.BaseDir, "CSharpLoader", "ReadyM.Loader.Wukong.Managed.dll"));
         }
         catch (Exception ex)
         {
@@ -50,14 +50,14 @@ public static class EntryPoint
             DI.Instance.BootstrapLogger.LogError("Could not find entry point");
             return;
         }
-        
+
         var initMethod = _managedEntryPoint.GetMethod("Init");
         if (initMethod == null)
         {
             DI.Instance.BootstrapLogger.LogError("Could not find Init method in entry point");
             return;
         }
-        
+
         try
         {
             initMethod.Invoke(null, [DI.Instance]);
@@ -69,7 +69,7 @@ public static class EntryPoint
 
         DI.Instance.BootstrapLogger.LogDebug("Loading mods complete.");
     }
-    
+
     // ReSharper disable once UnusedMember.Global
     public static void LateInit()
     {
@@ -81,7 +81,7 @@ public static class EntryPoint
             DI.Instance.BootstrapLogger.LogError("Could not find LateInit method in entry point");
             return;
         }
-        
+
         try
         {
             lateInitMethod.Invoke(null, null);

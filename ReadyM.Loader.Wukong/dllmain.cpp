@@ -1,3 +1,4 @@
+#pragma comment(lib, "Version.lib")
 #include <codecvt>
 #include <unordered_map>
 #include <fstream>
@@ -11,7 +12,7 @@
 #include "Config/debugger.h"
 #include "Config/flags.h"
 #include "Config/path.h"
-#include "EntryDll/version_dll.h"
+#include "EntryDll/dxgi_dll.h"
 #include "Logger/logger.h"
 #include "Mono/appdomain.h"
 #include "Mono/assembly.h"
@@ -81,10 +82,10 @@ static bool bootstrap_init()
         log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_second_stage_method);
         return false;
     }
-    
+
     auto preprocess_method_desc = mono_method_desc_new(k_entry_point_preprocess_method, true);
     DEFER([&] { mono_method_desc_free(preprocess_method_desc); });
-    
+
     if (!preprocess_method_desc)
     {
         log_error("Invalid method descriptor: mono_method_desc_new failed for {}", k_entry_point_preprocess_method);
@@ -97,7 +98,7 @@ static bool bootstrap_init()
         log_error("Did not find the method `{}` mono_method_desc_search_in_image failed", k_entry_point_preprocess_method);
         return false;
     }
-    
+
     auto init_method_desc = mono_method_desc_new(k_entry_point_init_method, true);
     DEFER([&] { mono_method_desc_free(init_method_desc); });
 
@@ -121,9 +122,9 @@ static bool bootstrap_init()
         &g_log_file_handle,
         nullptr
     };
-    
+
     mono_runtime_invoke(first_stage_method, nullptr, init_logging_params, exc_obj);
-    
+
     if (exc != nullptr)
     {
         log_error("mono_runtime_invoke {} failed with exception", k_entry_point_first_stage_method);
@@ -194,7 +195,7 @@ static bool bootstrap_init()
         log_error(L"{}", exc_msg);
         return false;
     }
-    
+
     exc = nullptr;
 
     mono_runtime_invoke(init_method, nullptr, nullptr, exc_obj);
@@ -246,7 +247,7 @@ static bool bootstrap_late_init()
 
     MonoException* exc = nullptr;
     MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
-    
+
     exc = nullptr;
 
     mono_runtime_invoke(late_init_method, nullptr, nullptr, exc_obj);
@@ -455,7 +456,7 @@ std::wstring utf8_to_wide(const std::string& str)
 std::wstring get_handshake_file_path()
 {
     wchar_t* localAppData = nullptr;
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &localAppData)))
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &localAppData)))
     {
         std::wstring path = localAppData;
         CoTaskMemFree(localAppData);
@@ -510,43 +511,6 @@ static std::unordered_map<std::wstring, std::wstring> parse_env_file(const std::
     return map;
 }
 
-static std::optional<std::wstring> try_get_mod_folder_override()
-{
-    auto path = get_handshake_file_path();
-    auto env = parse_env_file(path);
-
-    // print the env map for debugging
-    log_debug(L"Parsed environment variables from {}:", path);
-    for (const auto& [key, value] : env)
-    {
-        if (key == L"JWT_TOKEN")
-            continue; // skip logging the JWT for security reasons
-    
-        log_debug(L"{}: {}", key, value);
-    }
-
-    if (env.contains(L"LAUNCHER_PID"))
-    {
-        DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
-        if (!is_launcher_process_still_running(pid, L"ReadyM.Launcher.exe"))
-        {
-            log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
-            return std::nullopt;
-        }
-    }
-
-    log_debug(L"Launcher process is running as expected.");
-
-    if (env.contains(L"MOD_FOLDER"))
-    {
-        std::wstring wmodfolder(env[L"MOD_FOLDER"].begin(), env[L"MOD_FOLDER"].end());
-        if (std::filesystem::exists(wmodfolder))
-            return wmodfolder;
-    }
-
-    return std::nullopt;
-}
-
 static bool init_pak_loading()
 {
     log_info("Patching Unreal Engine .pak signature checks");
@@ -562,11 +526,17 @@ static bool init_pak_loading()
 
 static bool init_embed_runtime()
 {
+    const auto path = get_handshake_file_path();
+    if (!std::filesystem::exists(path))
+    {
+        return false;
+    }
+
     if (!init_console_logging())
     {
         log_error("Failed to initialize logging.");
     }
-    
+
     auto enable_console_flag = load_enable_console();
 
     if (enable_console_flag == 1)
@@ -575,7 +545,46 @@ static bool init_embed_runtime()
         log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
     }
 
-    auto mod_dir_override = try_get_mod_folder_override();
+    auto env = parse_env_file(path);
+
+    // check if env["GAME_MODE"] is "co-op". Otherwise, exit early
+    // TODO: Migrate PvP to use this loader
+    if (!env.contains(L"GAME_MODE") || env[L"GAME_MODE"] != L"co-op")
+    {
+        log_info(L"GAME_MODE is not 'co-op'. Exiting CSharpLoader initialization.");
+        return false;
+    }
+
+    // print the env map for debugging
+    log_debug(L"Parsed environment variables from {}:", path);
+    for (const auto& [key, value] : env)
+    {
+        if (key == L"JWT_TOKEN")
+            continue; // skip logging the JWT for security reasons
+
+        log_debug(L"{}: {}", key, value);
+    }
+
+    if (env.contains(L"LAUNCHER_PID"))
+    {
+        DWORD pid = std::stoul(env[L"LAUNCHER_PID"]);
+        if (!is_launcher_process_still_running(pid, L"ReadyM.Launcher.exe"))
+        {
+            log_error(L"Launcher process with PID {} is not running or does not match expected image name.", pid);
+            return false;
+        }
+
+        log_debug(L"Launcher process is running as expected.");
+    }
+
+    std::optional<std::wstring> mod_dir_override = std::nullopt;
+
+    if (env.contains(L"MOD_FOLDER"))
+    {
+        std::wstring wmodfolder(env[L"MOD_FOLDER"].begin(), env[L"MOD_FOLDER"].end());
+        if (std::filesystem::exists(wmodfolder))
+            mod_dir_override = wmodfolder;
+    }
 
     if (mod_dir_override.has_value())
     {
@@ -611,7 +620,7 @@ static bool init_embed_runtime()
 
     auto mod_dir = get_mod_dir();
     auto loader_dir = get_loader_dir();
-    
+
     log_info("CSharpLoader EnableDevelop flag: {}", enable_develop_flag);
     if (enable_develop_flag)
     {
@@ -620,7 +629,7 @@ static bool init_embed_runtime()
             mod_dir / L"ReflectionOnly",
             loader_dir
         };
-        
+
         if (!load_debugger_symbols(dirs))
         {
             log_error("Failed to load debugger symbols.");
@@ -656,9 +665,12 @@ static void init_dll(HMODULE hModule)
     DisableThreadLibraryCalls(hModule);
     g_hModule = hModule;
 
-    init_version_dll();
-    init_embed_runtime();
-    init_pak_loading();
+    if (!init_version_dll())
+        return;
+    if (!init_embed_runtime())
+        return;
+    if (!init_pak_loading())
+        return;
 }
 
 
