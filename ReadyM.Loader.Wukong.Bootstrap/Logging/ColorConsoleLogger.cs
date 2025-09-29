@@ -6,8 +6,6 @@ namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 internal class ColorConsoleLogger(string? categoryName, bool autoFlush, ConsoleFormatter consoleFormatter) : ILogger
 {
-    private static readonly object LockObj = new();
-
     public IDisposable BeginScope<TState>(TState state)
         where TState : notnull
         => null!;
@@ -15,7 +13,8 @@ internal class ColorConsoleLogger(string? categoryName, bool autoFlush, ConsoleF
     public bool IsEnabled(LogLevel logLevel)
         => true;
 
-    private readonly StringWriter _stringWriter = new();
+    [ThreadStatic]
+    private static StringWriter? _stringWriter;
 
     public void Log<TState>(
         LogLevel logLevel,
@@ -39,30 +38,28 @@ internal class ColorConsoleLogger(string? categoryName, bool autoFlush, ConsoleF
             _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null)
         };
 
-        lock (LockObj)
+        var originalColor = Console.ForegroundColor;
+        try
         {
-            var originalColor = Console.ForegroundColor;
-            try
-            {
-                Console.ForegroundColor = color;
-                var logEntry = new LogEntry<TState>(logLevel, categoryName ?? "", eventId, state, exception, formatter);
+            Console.ForegroundColor = color;
+            var logEntry = new LogEntry<TState>(logLevel, categoryName ?? "", eventId, state, exception, formatter);
 
-                consoleFormatter.Write(logEntry, null, _stringWriter);
+            _stringWriter ??= new StringWriter();
+            consoleFormatter.Write(logEntry, null, _stringWriter);
 
-                var line = _stringWriter.ToString();
-                _stringWriter.GetStringBuilder().Clear();
+            var line = _stringWriter.ToString();
+            _stringWriter.GetStringBuilder().Clear();
 
-                Console.WriteLine(line);
-            }
-            finally
-            {
-                Console.ForegroundColor = originalColor;
-            }
+            Console.WriteLine(line);
+        }
+        finally
+        {
+            Console.ForegroundColor = originalColor;
+        }
 
-            if (autoFlush)
-            {
-                Console.Out.Flush();
-            }
+        if (autoFlush)
+        {
+            Console.Out.Flush();
         }
     }
 }
