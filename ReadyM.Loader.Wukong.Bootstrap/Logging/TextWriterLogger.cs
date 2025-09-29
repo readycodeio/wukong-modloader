@@ -6,8 +6,8 @@ namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter writer, ConsoleFormatter consoleFormatter) : ILogger
 {
-    private static readonly object LockObj = new();
-    private readonly StringWriter _stringWriter = new();
+    [ThreadStatic]
+    private static StringWriter? _stringWriter;
 
     public IDisposable? BeginScope<TState>(TState state)
         where TState : notnull
@@ -28,19 +28,17 @@ internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter
 
         var logEntry = new LogEntry<TState>(logLevel, categoryName ?? "", eventId, state, exception, formatter);
 
-        lock (LockObj)
+        _stringWriter ??= new StringWriter();
+        consoleFormatter.Write(logEntry, null, _stringWriter);
+
+        var line = _stringWriter.ToString();
+        _stringWriter.GetStringBuilder().Clear();
+
+        writer.WriteLine(line);
+
+        if (autoFlush)
         {
-            consoleFormatter.Write(logEntry, null, _stringWriter);
-
-            var line = _stringWriter.ToString();
-            _stringWriter.GetStringBuilder().Clear();
-
-            writer.WriteLine(line);
-
-            if (autoFlush)
-            {
-                writer.Flush();
-            }
+            writer.Flush();
         }
     }
 }
