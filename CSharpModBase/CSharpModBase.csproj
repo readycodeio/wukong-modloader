@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net472</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -12,7 +12,6 @@
     <ItemGroup>
         <PackageReference Include="SharpDX" Version="4.2.0" />
         <PackageReference Include="SharpDX.XInput" Version="4.2.0" />
-        <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\HarmonyPrepatcher\src\Harmony\Lib.Harmony\Lib.Harmony.csproj" />
       <ProjectReference Include="..\ReadyM.Loader.Wukong.Bootstrap\ReadyM.Loader.Wukong.Bootstrap.csproj" />
     </ItemGroup>
 

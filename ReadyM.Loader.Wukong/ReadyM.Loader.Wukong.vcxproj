@@ -89,21 +89,21 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>version</TargetName>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -121,7 +121,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -189,7 +189,7 @@
     <ClCompile Include="Config\logger-config.cpp" />
     <ClCompile Include="Config\path.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="EntryDll\version_dll.cpp" />
+    <ClCompile Include="EntryDll\dxgi_dll.cpp" />
     <ClCompile Include="Logger\logger.cpp" />
     <ClCompile Include="Memory\common.cpp" />
     <ClCompile Include="Memory\patch.cpp" />
@@ -215,7 +215,7 @@
     <ClInclude Include="Config\flags.h" />
     <ClInclude Include="Config\logger-config.h" />
     <ClInclude Include="Config\path.h" />
-    <ClInclude Include="EntryDll\version_dll.h" />
+    <ClInclude Include="EntryDll\dxgi_dll.h" />
     <ClInclude Include="Logger\logger.h" />
     <ClInclude Include="Memory\common.h" />
     <ClInclude Include="Memory\patch.h" />
@@ -237,6 +237,7 @@
     <ClInclude Include="Mono\threads.h" />
     <ClInclude Include="Unreal\signature_check.h" />
     <ClInclude Include="USharp\usharp.h" />
+    <ClInclude Include="Utils\deferred_call.h" />
     <ClInclude Include="Utils\string.h" />
     <ClInclude Include="Windows\console.h" />
   </ItemGroup>

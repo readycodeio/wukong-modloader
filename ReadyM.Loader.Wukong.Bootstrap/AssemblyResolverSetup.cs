@@ -1,9 +1,10 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
-public class Bootstrapper(ILogger logger)
+public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, PathSettings settings, ILogger logger)
 {
     public void Setup()
     {
@@ -26,7 +27,13 @@ public class Bootstrapper(ILogger logger)
     private Assembly? TryLoadDll(string path)
     {
         logger.LogDebug("Trying to load from: {Path}", path);
-        if (File.Exists(path))
+        var patchedPath = path.Replace(".dll", "_patched.dll");
+        if (File.Exists(patchedPath))
+        {
+            logger.LogDebug("Success (patched)");
+            return Assembly.LoadFrom(patchedPath);
+        }
+        else if (File.Exists(path))
         {
             logger.LogDebug("Success");
             return Assembly.LoadFrom(path);
@@ -42,21 +49,21 @@ public class Bootstrapper(ILogger logger)
             var dllName = $"{new AssemblyName(args.Name).Name}.dll";
 
             Assembly? result;
-            if (Settings.LoadingModName == null)
+            if (currentLoadingState.LoadingModName == null)
             {
                 // NOTE: This will prevent the assembly from being loaded
                 logger.LogWarning("AssemblyResolve: {Name} but no mod is loading", args.Name);
-                result = TryLoadDll(Path.Combine(Settings.ModDir, "Common", dllName)) ??
-                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, "Common", dllName)) : null) ??
-                         TryLoadDll(Path.Combine(Settings.LoaderDir, dllName));
+                result = TryLoadDll(Path.Combine(settings.ModDir, "Common", dllName)) ??
+                         (currentLoadingState.CloneDir != null ? TryLoadDll(Path.Combine(currentLoadingState.CloneDir, "Common", dllName)) : null) ??
+                         TryLoadDll(Path.Combine(settings.LoaderDir, dllName));
             }
             else
             {
-                result = TryLoadDll(Path.Combine(Settings.ModDir, Settings.LoadingModName, dllName)) ??
-                         TryLoadDll(Path.Combine(Settings.ModDir, "Common", dllName)) ??
-                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, Settings.LoadingModName, dllName)) : null) ??
-                         (Settings.CloneDir != null ? TryLoadDll(Path.Combine(Settings.CloneDir, "Common", dllName)) : null) ??
-                         TryLoadDll(Path.Combine(Settings.LoaderDir, dllName));
+                result = TryLoadDll(Path.Combine(settings.ModDir, currentLoadingState.LoadingModName, dllName)) ??
+                         TryLoadDll(Path.Combine(settings.ModDir, "Common", dllName)) ??
+                         (currentLoadingState.CloneDir != null ? TryLoadDll(Path.Combine(currentLoadingState.CloneDir, currentLoadingState.LoadingModName, dllName)) : null) ??
+                         (currentLoadingState.CloneDir != null ? TryLoadDll(Path.Combine(currentLoadingState.CloneDir, "Common", dllName)) : null) ??
+                         TryLoadDll(Path.Combine(settings.LoaderDir, dllName));
             }
 
             if (result != null)

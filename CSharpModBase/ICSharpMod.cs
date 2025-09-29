@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace CSharpModBase;
+﻿namespace CSharpModBase;
 
 public interface ICSharpMod
 {

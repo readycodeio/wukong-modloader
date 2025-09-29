@@ -5,53 +5,26 @@ $zipName = "Loader"
 
 # Define the source and destination directories
 $nativeSourceDir = "x64/$Configuration"
-$bootstrapSourceDir = "ReadyM.Loader.Wukong.Bootstrap/bin/$Configuration/netstandard2.0/win-x64"
-$csharpModBaseSourceDir = "CSharpModBase/bin/$Configuration/net472"
-$csharpModBaseV2SourceDir = "CSharpModBaseV2/bin/$Configuration/netstandard2.0"
-$managedSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
-$overridesSourceDir = "ReadyM.Loader.Wukong.Managed/bin/$Configuration/netstandard2.0/win-x64"
+$overridesSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
+$toplevelSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
+$facadesSourceDir = "ReadyM.Loader.Executable/Facades"
+$originalSourceDir = "Original"
 $pakSourceDir = "PakFiles"
+$configSourceDir = "Config"
 
-$nativeDestDir = "Binaries/Win64"
-$bootstrapDestDir = "Binaries/Win64/CSharpLoader"
-$csharpModBaseDestDir = "Binaries/Win64/CSharpLoader"
-$csharpModBaseV2DestDir = "Binaries/Win64/CSharpLoader"
-$managedDestDir = "Binaries/Win64/CSharpLoader"
-$overridesDestDir = "Binaries/Win64/CSharpLoader/Overrides"
-$pakDestDir = "Content/Paks/LogicMods"
+$nativeDestDir = "@GAME/Binaries/Win64"
+$overridesDestDir = "@COOP/CSharpLoader/Overrides"
+$facadesDestDir = "@COOP/CSharpLoader/Overrides"
+$toplevelDestDir = "@COOP/CSharpLoader"
+$pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
+$originalNativeFiles = @(
+    "version.dll"
+)
 $nativeFiles = @(
-    "version.dll",
-    @("version.pdb", $true)
-)
-$bootstrapFiles = @(
-    "ReadyM.Loader.Wukong.Bootstrap.dll",
-    @("ReadyM.Loader.Wukong.Bootstrap.pdb", $true)
-)
-$csharpModBaseFiles = @(
-    "0Harmony.dll",
-    "CSharpModBase.dll",
-    @("CSharpModBase.pdb", $true),
-    "SharpDX.dll", 
-    "SharpDX.XInput.dll"
-)
-$csharpModBaseV2Files = @(
-    "CSharpModBaseV2.dll",
-    @("CSharpModBaseV2.pdb", $true)
-)
-$managedFiles = @(
-    "ReadyM.Loader.Wukong.Managed.dll",
-    @("ReadyM.Loader.Wukong.Managed.pdb", $true),
-    "INIFileParser.dll",
-    "CSharpModBase.dll",
-    @("CSharpModBase.pdb", $true),
-    "CSharpModBaseV2.dll",
-    @("CSharpModBaseV2.pdb", $true),
-    "Mono.Cecil.dll",
-    "Mono.Cecil.Mdb.dll",
-    "Mono.Cecil.Pdb.dll", 
-    "Mono.Cecil.Rocks.dll"
+    "dxgi.dll",
+    @("dxgi.pdb", $true)
 )
 $overridesFiles = @(
     "Microsoft.Bcl.AsyncInterfaces.dll",
@@ -67,8 +40,11 @@ $overridesFiles = @(
     "Microsoft.Extensions.Options.dll",
     "Microsoft.Extensions.Options.ConfigurationExtensions.dll",
     "Microsoft.Extensions.Primitives.dll"
+    "Mono.Cecil.dll",
+    "Mono.Cecil.Mdb.dll",
+    "Mono.Cecil.Pdb.dll", 
+    "Mono.Cecil.Rocks.dll"
     "System.Buffers.dll",
-    "System.ComponentModel.Annotations.dll",
     "System.Diagnostics.DiagnosticSource.dll",
     "System.IO.Pipelines.dll",
     "System.Memory.dll",
@@ -76,7 +52,31 @@ $overridesFiles = @(
     "System.Runtime.CompilerServices.Unsafe.dll",
     "System.Text.Encodings.Web.dll",
     "System.Text.Json.dll",
-    "System.Threading.Tasks.Extensions.dll"
+    "System.Threading.Tasks.Extensions.dll",
+    "System.ValueTuple.dll"
+)
+$facadesFiles = @(
+    "System.Runtime.dll"
+)
+$toplevelFiles = @(
+    "0Harmony.dll",
+    "PreludeLib.dll",
+    @("PreludeLib.pdb", $true),
+    "SharpDX.dll", 
+    "SharpDX.XInput.dll",
+    "CSharpModBase.dll",
+    @("CSharpModBase.pdb", $true),
+    "CSharpModBaseV2.dll",
+    @("CSharpModBaseV2.pdb", $true),
+    "ReadyM.Loader.Wukong.Bootstrap.dll",
+    @("ReadyM.Loader.Wukong.Bootstrap.pdb", $true),
+    "ReadyM.Loader.Wukong.Managed.dll",
+    @("ReadyM.Loader.Wukong.Managed.pdb", $true),
+    "INIFileParser.dll"
+)
+$configFiles = @(
+    "b1cs.ini",
+    "debugger-agent.txt"
 )
 $pakFiles = @(
     "WukongMp.pak"
@@ -84,11 +84,11 @@ $pakFiles = @(
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
-    @($bootstrapFiles, $bootstrapSourceDir, $bootstrapDestDir),
-    @($csharpModBaseFiles, $csharpModBaseSourceDir, $csharpModBaseDestDir),
-    @($csharpModBaseV2Files, $csharpModBaseV2SourceDir, $csharpModBaseV2DestDir),
-    @($managedFiles, $managedSourceDir, $managedDestDir),
+    @($originalNativeFiles, $originalSourceDir, $nativeDestDir),
     @($overridesFiles, $overridesSourceDir, $overridesDestDir),
+    @($facadesFiles, $facadesSourceDir, $facadesDestDir),
+    @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
+    @($configFiles, $configSourceDir, $toplevelDestDir),
     @($pakFiles, $pakSourceDir, $pakDestDir)
 )
 
