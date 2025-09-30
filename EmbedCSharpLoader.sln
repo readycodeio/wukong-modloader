@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadyM.Loader.Wukong", "ReadyM.Loader.Wukong\ReadyM.Loader.Wukong.vcxproj", "{A12CECEB-428F-4712-A1BC-EBD9D703A056}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadyM.Loader.Wukong.Managed", "ReadyM.Loader.Wukong.Managed\ReadyM.Loader.Wukong.Managed.csproj", "{92DC2206-C47F-45E8-AF2A-AD4F4971377C}"
@@ -154,8 +157,6 @@ Global
 		{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}.Release|Win32.Build.0 = Release|Any CPU
 		{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}.Release|x64.ActiveCfg = Release|Any CPU
 		{AE34949A-B89F-4CB9-ACFB-5D768BBDA236}.Release|x64.Build.0 = Release|Any CPU
-		{8ECC3919-9F65-4A39-B57E-E99A3837DCD0}.Release|x64.ActiveCfg = Release|Any CPU
-		{8ECC3919-9F65-4A39-B57E-E99A3837DCD0}.Release|x64.Build.0 = Release|Any CPU
 		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|Win32.ActiveCfg = Debug|Any CPU
 		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|Win32.Build.0 = Debug|Any CPU
 		{370963EF-3558-45D1-A449-9409BC4079B0}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -212,5 +213,13 @@ Global
 		{AB32FBD8-8510-4BD3-9CFA-BE72555A654A}.Release|Win32.Build.0 = Release|Any CPU
 		{AB32FBD8-8510-4BD3-9CFA-BE72555A654A}.Release|x64.ActiveCfg = Release|Any CPU
 		{AB32FBD8-8510-4BD3-9CFA-BE72555A654A}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		HarmonyPrepatcher\src\Harmony\Harmony\Harmony.projitems*{306bd87f-b789-4470-94ad-b53cf26d9f1b}*SharedItemsImports = 5
+		HarmonyPrepatcher\src\Harmony\Harmony\Harmony.projitems*{8ecc3919-9f65-4a39-b57e-e99a3837dcd0}*SharedItemsImports = 13
+		HarmonyPrepatcher\src\Harmony\Harmony\Harmony.projitems*{f320f367-b18b-4998-aaf6-69a3869d0596}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal
