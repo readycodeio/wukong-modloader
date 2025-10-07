@@ -22,7 +22,7 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
         _options = new JsonSerializerOptions(_options);
         _options.Converters.Add(converter);
     }
-    
+
     public override void Write<TState>(
         in LogEntry<TState> logEntry,
         IExternalScopeProvider? scopeProvider,
@@ -53,6 +53,18 @@ internal class CustomJsonFormatter(Guid sessionId) : ConsoleFormatter("custom-js
             props["Message"] = logEntry.Exception.Message;
             props["Thread"] = Environment.CurrentManagedThreadId;
             props["Trace"] = logEntry.Exception.ToString();
+
+            // write nested innerExceptions
+            var inner = logEntry.Exception.InnerException;
+            var i = 1;
+            while (inner != null)
+            {
+                messageTemplate += $" | InnerMessage{i}: {{{"InnerMessage" + i}}} | InnerTrace{i}: {{{"InnerTrace" + i}}}";
+                props[$"InnerMessage{i}"] = inner.Message;
+                props[$"InnerTrace{i}"] = inner.ToString();
+                inner = inner.InnerException;
+                i++;
+            }
         }
 
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)

@@ -110,6 +110,14 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
         {
             textWriter.Write(" ");
             textWriter.Write(logEntry.Exception);
+            
+            var inner = logEntry.Exception.InnerException;
+            while (inner != null)
+            {
+                textWriter.Write(" --INNER--> ");
+                textWriter.Write(inner);
+                inner = inner.InnerException;
+            }
         }
     }
 }
