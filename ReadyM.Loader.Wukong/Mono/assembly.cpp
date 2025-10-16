@@ -349,7 +349,7 @@ void* get_mono_assembly_get_image_ptr()
             "40 53 "
             "48 83 ec 30 "
             "8b 1d ? ? ? ? "
-            "81 c3 ? ? ? ? "
+            "81 ? ? ? ? ? "
             "48 8d 04 1c "
             "48 89 cb "
             "48 89 44 24 20 "
@@ -383,7 +383,7 @@ void* get_mono_assembly_get_image_ptr()
             return g_mono_assembly_get_image_ptr.value();
         }
 
-        log_error_missing_ptr("48 8d 04 1c");
+        log_error_missing_ptr("mono_assembly_get_image");
         g_mono_assembly_get_image_ptr = nullptr;
         return nullptr;
     }

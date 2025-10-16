@@ -87,7 +87,7 @@ void* get_mono_debug_init_ptr()
         uint64_t mono_debug_init = signature(
             "40 53 "
             "48 83 EC 30 "
-            "83 3D 27 ? ? ? ? "
+            "83 3D ? ? ? ? ? "
             "8B D9 "
             "74 ? "
             "4C 8D 05 ? ? ? ? "
