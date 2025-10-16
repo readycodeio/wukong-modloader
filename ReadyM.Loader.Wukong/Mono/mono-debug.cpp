@@ -85,15 +85,15 @@ void* get_mono_debug_init_ptr()
     if (!g_mono_debug_init_ptr.has_value())
     {
         uint64_t mono_debug_init = signature(
-            "40 53 "
-            "48 83 EC 30 "
-            "83 3D ? ? ? ? ? "
-            "8B D9 "
-            "74 ? "
-            "4C 8D 05 ? ? ? ? "
-            "BA 67 00 00 00 "
-            "48 8D 0D ? ? ? ? "
-            "E8 ? ? ? ?"
+            "40 53 "               // push rbx
+            "48 83 EC 30 "         // sub rsp, 0x30
+            "83 3D ? ? ? ? ? "     // cmp dword ptr [rip+disp32], imm8
+            "8B D9 "               // mov ebx, ecx
+            "74 ? "                // jz rel8
+            "4C 8D 05 ? ? ? ? "    // lea r8, [rip+disp32]
+            "BA 67 00 00 00 "      // mov edx, 0x67
+            "48 8D 0D ? ? ? ? "    // lea rcx, [rip+disp32]
+            "E8 ? ? ? ?"           // call rel32
         );
 
         if (!mono_debug_init)

@@ -201,7 +201,7 @@ bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>&
                         log_debug("Not replacing duplicate bundle override: {}", assembly_name);
                         break;
                     }
-                    
+
                     log_debug("Replacing existing bundle: {}", assembly_name);
                     auto new_bundle = glib_new0<MonoBundledAssembly>();
                     new_bundle->name = old_bundle->name;
@@ -265,7 +265,7 @@ bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>&
     {
         if (std::ranges::find(used_indices, i) != used_indices.end())
             continue;
-        
+
         log_debug("Keeping old bundle: {}", old_bundles[i]->name);
         auto old_bundle = old_bundles[i];
         new_bundles_arr.push_back(old_bundle);
@@ -347,15 +347,15 @@ void* get_mono_assembly_get_image_ptr()
     {
         auto mono_assembly_get_image_sig_steam = signature(
             "40 53 "
-            "48 83 ec 30 "
-            "8b 1d ? ? ? ? "
-            "81 ? ? ? ? ? "
-            "48 8d 04 1c "
-            "48 89 cb "
-            "48 89 44 24 20 "
-            "48 8d 4c 24 20 "
-            "48 8d 05 ? ? ? ? "
-            "48 89 44 24 28"
+            "48 83 EC ? "       // sub rsp, imm8
+            "8B 1D ? ? ? ? "    // mov ebx, [rip+disp32]
+            "81 ? ? ? ? ? "     // op r/m32, imm32 (modrm + imm vary)
+            "48 8D 04 1C "      // lea rax, [rsp+rbx]
+            "48 89 CB "         // mov rbx, rcx
+            "48 89 44 24 ? "    // mov [rsp+disp8], rax
+            "48 8D 4C 24 ? "    // lea rcx, [rsp+disp8]
+            "48 8D 05 ? ? ? ? " // lea rax, [rip+disp32]
+            "48 89 44 24 ?"
         );
 
         if (mono_assembly_get_image_sig_steam)
@@ -367,10 +367,10 @@ void* get_mono_assembly_get_image_ptr()
 
         auto mono_assembly_get_image_sig_epic = signature(
             "40 53 " // push rbx
-            "48 83 ec 30 " // sub rsp, 30h
-            "48 8d 44 24 20 " // lea rax, [rsp + 20h]
+            "48 83 ec ? " // sub rsp, 30h
+            "48 8d 44 24 ? " // lea rax, [rsp + 20h]
             "48 89 cb " // mov rbx, rcx
-            "48 89 44 24 20 " // mov [rsp + 20h], rax
+            "48 89 44 24 ? " // mov [rsp + 20h], rax
             "b8 ? ? ? ? " // mov eax ???
             "2b 05 ? ? ? ? " // sub eax, [rip + ?] // relative offset
             "48 8d 0c 04 " // lea rcx, [rsp + rax] // load address of the image
