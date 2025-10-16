@@ -345,7 +345,7 @@ void* get_mono_assembly_get_image_ptr()
 {
     if (!g_mono_assembly_get_image_ptr.has_value())
     {
-        auto mono_assembly_get_image_sig_steam = signature(
+        auto mono_assembly_get_image_sig = signature(
             "40 53 "
             "48 83 EC ? "       // sub rsp, imm8
             "8B 1D ? ? ? ? "    // mov ebx, [rip+disp32]
@@ -358,28 +358,10 @@ void* get_mono_assembly_get_image_ptr()
             "48 89 44 24 ?"
         );
 
-        if (mono_assembly_get_image_sig_steam)
+        if (mono_assembly_get_image_sig)
         {
-            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig_steam);
-            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig_steam);
-            return g_mono_assembly_get_image_ptr.value();
-        }
-
-        auto mono_assembly_get_image_sig_epic = signature(
-            "40 53 " // push rbx
-            "48 83 ec ? " // sub rsp, 30h
-            "48 8d 44 24 ? " // lea rax, [rsp + 20h]
-            "48 89 cb " // mov rbx, rcx
-            "48 89 44 24 ? " // mov [rsp + 20h], rax
-            "b8 ? ? ? ? " // mov eax ???
-            "2b 05 ? ? ? ? " // sub eax, [rip + ?] // relative offset
-            "48 8d 0c 04 " // lea rcx, [rsp + rax] // load address of the image
-        );
-
-        if (mono_assembly_get_image_sig_epic)
-        {
-            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig_epic);
-            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig_epic);
+            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig);
+            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig);
             return g_mono_assembly_get_image_ptr.value();
         }
 
