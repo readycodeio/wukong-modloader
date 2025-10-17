@@ -1,24 +1,14 @@
 #!powershell.exe -ExecutionPolicy Bypass -File
 param(
-    [String]$ModVariant,
     [String]$Configuration="Debug"
 )
 
 . ./BuildInfo.ps1
 
-$modeFolder = switch -Regex ($ModVariant.ToLower()) {
-    'coop' { 'Black Myth Wukong Co-op'; break }
-    'pvp'  { 'Black Myth Wukong PvP';   break }
-    default {
-        Write-Error "Invalid ModVariant: '$ModVariant'. Expected 'Coop' or 'PvP'."
-        exit 1
-    }
-}
-
 $steamDir = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath" | Select-Object -ExpandProperty InstallPath
 $destRoot = "$steamDir/steamapps/common/BlackMythWukong/b1"
 
-$coopBase = "$env:APPDATA/ReadyM.Launcher/game_modes/$modeFolder"
+$coopBase = "$env:APPDATA/ReadyM.Launcher/WukongMP"
 
 # Perform copies
 foreach ($item in $allFiles) {
@@ -26,7 +16,7 @@ foreach ($item in $allFiles) {
     $sourceDir = $item[1]
 
     # Chain the replace operations. The output of the first becomes the input for the second.
-    $destDir = $item[2] -replace '@GAME', $destRoot -replace '@COOP', $coopBase
+    $destDir = $item[2] -replace '@GAME', $destRoot -replace '@APPDATA', $coopBase
 
     CopyFiles $files $sourceDir $destDir
 }

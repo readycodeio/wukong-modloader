@@ -13,9 +13,9 @@ $pakSourceDir = "PakFiles"
 $configSourceDir = "Config"
 
 $nativeDestDir = "@GAME/Binaries/Win64"
-$overridesDestDir = "@COOP/CSharpLoader/Overrides"
-$facadesDestDir = "@COOP/CSharpLoader/Overrides"
-$toplevelDestDir = "@COOP/CSharpLoader"
+$overridesDestDir = "@APPDATA/CSharpLoader/Overrides"
+$facadesDestDir = "@APPDATA/CSharpLoader/Overrides"
+$toplevelDestDir = "@APPDATA/CSharpLoader"
 $pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
