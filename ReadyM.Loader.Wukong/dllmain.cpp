@@ -667,9 +667,9 @@ static void init_dll(HMODULE hModule)
 
     if (!init_version_dll())
         return;
-    if (!init_embed_runtime())
-        return;
     if (!init_pak_loading())
+        return;
+    if (!init_embed_runtime())
         return;
 }
 
