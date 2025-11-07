@@ -51,10 +51,11 @@ foreach ($item in $allFiles) {
 }
 
 # 5. Zip files
-$zipName = "$zipName-$version.zip"
+$zipName = "$zipName-$version.7z"
 $zipPath = Join-Path $outputRoot $zipName
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-Compress-Archive -Path (Join-Path $destRoot '*') -DestinationPath $zipPath -Force
+
+7z a -t7z -mx=9 -ms=on -mmt=on $zipPath (Join-Path $destRoot '*')
 Write-Output "Created $zipName"
 
 # 7. Open Output folder in explorer
