@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CSharpModBase;
+using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
 using UnrealEngine.Runtime;
 using Log = ReadyM.Loader.Wukong.Bootstrap.Log;

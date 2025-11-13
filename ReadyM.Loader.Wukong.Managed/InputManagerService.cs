@@ -1,5 +1,4 @@
-﻿using CSharpManager;
-using CSharpModBase;
+﻿using CSharpModBase;
 using CSharpModBase.Input;
 
 namespace ReadyM.Loader.Wukong.Managed;
@@ -10,8 +9,6 @@ public class InputManagerService(InputManager inputManager, LoadingPhaseManager 
     
     public void StartInputLoop()
     {
-        Utils.InitInputManager(inputManager);
-
         inputManager.RegisterBuiltinKeyBind(ModifierKeys.Control, Key.F5, loadingPhaseManager.RequestReloadMods);
         _inputLoopThread = new Thread(InputLoop)
         {
