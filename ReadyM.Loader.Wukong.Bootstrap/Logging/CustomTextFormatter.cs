@@ -2,6 +2,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 
+#if DEBUG
+using System.Diagnostics;
+using System.Reflection;
+#endif
+
 // ReSharper disable PossibleMultipleEnumeration
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
