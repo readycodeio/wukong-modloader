@@ -14,7 +14,7 @@ static std::wstring get_loader_directory()
     {
         std::wstring path = localAppData;
         CoTaskMemFree(localAppData);
-        return path + L"\\ReadyM.Launcher\\game_modes\\Black Myth Wukong Co-op";
+        return path + L"\\ReadyM.Launcher\\WukongMP";
     }
     return L"";
 }

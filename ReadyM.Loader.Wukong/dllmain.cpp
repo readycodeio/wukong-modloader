@@ -547,14 +547,6 @@ static bool init_embed_runtime()
 
     auto env = parse_env_file(path);
 
-    // check if env["GAME_MODE"] is "co-op". Otherwise, exit early
-    // TODO: Migrate PvP to use this loader
-    if (!env.contains(L"GAME_MODE") || env[L"GAME_MODE"] != L"co-op")
-    {
-        log_info(L"GAME_MODE is not 'co-op'. Exiting CSharpLoader initialization.");
-        return false;
-    }
-
     // print the env map for debugging
     log_debug(L"Parsed environment variables from {}:", path);
     for (const auto& [key, value] : env)
