@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using CSharpModBase;
 using CSharpModBase.Input;
 
-namespace CSharpManager;
+namespace CSharpModBase;
 
 public class InputManager : IInputManager
 {
+    public static readonly InputManager Instance = new();
+    
     public List<HotKeyItem> BuiltinHotKeyItems { get; } = new();
     public List<HotKeyItem> HotKeyItems { get; } = new();
     public bool EnableGamePad { get; set; } = true;

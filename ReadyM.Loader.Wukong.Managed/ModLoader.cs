@@ -297,6 +297,13 @@ public class ModLoader
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                // log inner exceptions
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    _logger.LogError(innerEx, "Inner exception:");
+                    innerEx = innerEx.InnerException;
+                }
             }
             
             _currentLoadingState.LoadingModName = null;

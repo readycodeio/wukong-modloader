@@ -1,4 +1,4 @@
-﻿using CSharpManager;
+﻿using CSharpModBase;
 using Microsoft.Extensions.Logging;
 using ReadyM.Loader.Wukong.Bootstrap;
 using ReadyM.Loader.Wukong.Bootstrap.Registry;
@@ -45,7 +45,7 @@ public class DI
         var modLoaderSettings = ModLoaderSettings = modLoaderSettingsFactory.CreateSettings();
         var modLoader = ModLoader = new ModLoader(modRegistry, loadingPhaseManager, currentLoadingState, pathSettings, modLoaderSettings, loaderLogger);
 
-        var inputManager = InputManager = new InputManager();
+        var inputManager = InputManager = InputManager.Instance;
         var inputManagerService = InputManagerService = new InputManagerService(inputManager, loadingPhaseManager);
     }
 }
