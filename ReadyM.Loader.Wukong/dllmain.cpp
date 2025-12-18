@@ -471,19 +471,26 @@ static bool is_launcher_process_still_running(DWORD pid, const std::wstring& exp
     if (!hProc)
         return false;
 
-    wchar_t exePath[MAX_PATH];
+    wchar_t exePath[MAX_PATH] = {};
     DWORD len = GetModuleFileNameEx(hProc, NULL, exePath, MAX_PATH);
     CloseHandle(hProc);
 
     if (len == 0)
+    {
+        log_error(L"Failed to get process exe path for PID {}.", pid); 
         return false;
+    }
 
-    // You can do stricter matching here if needed
-    std::wstring actual = exePath;
-    size_t pos = actual.find_last_of(L"\\/");
-    std::wstring filename = (pos != std::wstring::npos) ? actual.substr(pos + 1) : actual;
+    if (len >= MAX_PATH)
+    {
+        log_error(L"Process exe path is too long ({} characters), cannot verify image name.", len);
+        return true; // path too long, accept as is
+    }
 
-    return _wcsicmp(filename.c_str(), expectedImageName.c_str()) == 0;
+    const std::wstring wExePath = exePath;
+    log_info(L"Launcher process PID {} exe path: {}", pid, wExePath);
+
+    return wExePath.ends_with(expectedImageName);
 }
 
 static std::unordered_map<std::wstring, std::wstring> parse_env_file(const std::wstring& path)
