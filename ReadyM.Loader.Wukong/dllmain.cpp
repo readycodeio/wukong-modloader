@@ -468,9 +468,13 @@ std::wstring get_handshake_file_path()
 
 static bool is_launcher_process_still_running(DWORD pid, const std::wstring& expectedImageName)
 {
-    HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!hProc)
+    {
+        DWORD err = GetLastError();
+        log_error(L"Failed to open process with PID {}. Error code: {}", pid, err);
         return false;
+    }
 
     wchar_t exePath[WIN32_MAX_PATH] = {};
     DWORD len = GetModuleFileNameEx(hProc, NULL, exePath, WIN32_MAX_PATH);
@@ -478,7 +482,7 @@ static bool is_launcher_process_still_running(DWORD pid, const std::wstring& exp
 
     if (len == 0)
     {
-        log_error(L"Failed to get process exe path for PID {}.", pid); 
+        log_error(L"Failed to get process exe path for PID {}.", pid);
         return false;
     }
 
