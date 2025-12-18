@@ -25,6 +25,7 @@
 #include "USharp/usharp.h"
 #include "Utils/deferred_call.h"
 #include "Windows/console.h"
+#include "Windows/constants.h"
 
 
 static void* g_domain;
@@ -471,8 +472,8 @@ static bool is_launcher_process_still_running(DWORD pid, const std::wstring& exp
     if (!hProc)
         return false;
 
-    wchar_t exePath[MAX_PATH] = {};
-    DWORD len = GetModuleFileNameEx(hProc, NULL, exePath, MAX_PATH);
+    wchar_t exePath[WIN32_MAX_PATH] = {};
+    DWORD len = GetModuleFileNameEx(hProc, NULL, exePath, WIN32_MAX_PATH);
     CloseHandle(hProc);
 
     if (len == 0)
@@ -481,7 +482,7 @@ static bool is_launcher_process_still_running(DWORD pid, const std::wstring& exp
         return false;
     }
 
-    if (len >= MAX_PATH)
+    if (len >= WIN32_MAX_PATH)
     {
         log_error(L"Process exe path is too long ({} characters), cannot verify image name.", len);
         return true; // path too long, accept as is

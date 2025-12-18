@@ -240,6 +240,7 @@
     <ClInclude Include="Utils\deferred_call.h" />
     <ClInclude Include="Utils\string.h" />
     <ClInclude Include="Windows\console.h" />
+    <ClInclude Include="Windows\constants.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="Mono\register_bundled_assemblies.asm">

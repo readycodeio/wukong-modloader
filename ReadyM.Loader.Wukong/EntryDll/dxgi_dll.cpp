@@ -5,6 +5,7 @@
 #include <windows.h>
 
 #include "Logger/logger.h"
+#include "Windows/constants.h"
 
 static HMODULE h_module_dll = nullptr;
 static const wchar_t dll_fname[] = L"dxgi";
@@ -13,10 +14,10 @@ static const wchar_t dll_fname[] = L"dxgi";
 bool init_version_dll()
 {
     deinit_version_dll();
-    wchar_t system_dir[MAX_PATH]{0};
-    GetSystemDirectoryW(system_dir, MAX_PATH);
-    wchar_t fullpath_dll_name[MAX_PATH]{0};
-    swprintf_s(fullpath_dll_name, MAX_PATH, L"%s\\%s.dll", system_dir, dll_fname);
+    wchar_t system_dir[WIN32_MAX_PATH]{0};
+    GetSystemDirectoryW(system_dir, WIN32_MAX_PATH);
+    wchar_t fullpath_dll_name[WIN32_MAX_PATH]{0};
+    swprintf_s(fullpath_dll_name, WIN32_MAX_PATH, L"%s\\%s.dll", system_dir, dll_fname);
     if ((h_module_dll = LoadLibraryW(fullpath_dll_name)) == nullptr)
     {
         return false;

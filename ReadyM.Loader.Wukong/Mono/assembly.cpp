@@ -15,6 +15,7 @@
 #include "Memory/common.h"
 #include "Memory/patch.h"
 #include "Memory/scanner.h"
+#include "Windows/constants.h"
 
 
 typedef void* (*mono_assembly_request_open_t)(const char* filename, const MonoAssemblyOpenRequest* open_req, MonoImageOpenStatus* status);
@@ -316,9 +317,9 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
 
     auto full_filename = get_base_dir() / filename;
 
-    char full_filenameA[MAX_PATH];
+    char full_filenameA[WIN32_MAX_PATH];
     // convert to utf-8 to support Chinese path
-    WideCharToMultiByte(CP_UTF8, 0, full_filename.c_str(), MAX_PATH, full_filenameA, MAX_PATH, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, full_filename.c_str(), WIN32_MAX_PATH, full_filenameA, MAX_PATH, nullptr, nullptr);
     log_info(L"Loading CSharpManager from: {}", full_filename.c_str());
 
     MonoAssemblyOpenRequest open_request{};
