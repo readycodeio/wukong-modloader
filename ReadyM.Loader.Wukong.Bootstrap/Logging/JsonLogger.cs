@@ -10,7 +10,7 @@ internal class JsonLogger(JsonLoggerWorker worker, string? categoryName, Console
         => null!;
 
     public bool IsEnabled(LogLevel logLevel)
-        => true;
+        => logLevel is >= LogLevel.Information and < LogLevel.None;
     
     [ThreadStatic]
     private static StringWriter? _stringWriter;
