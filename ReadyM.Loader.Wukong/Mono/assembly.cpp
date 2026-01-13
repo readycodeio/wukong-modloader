@@ -342,47 +342,7 @@ void* mono_assembly_request_open(const std::filesystem::path& filename)
 }
 
 
-void* get_mono_assembly_get_image_ptr()
-{
-    if (!g_mono_assembly_get_image_ptr.has_value())
-    {
-        auto mono_assembly_get_image_sig = signature(
-            "40 53 "
-            "48 83 EC ? "       // sub rsp, imm8
-            "8B 1D ? ? ? ? "    // mov ebx, [rip+disp32]
-            "81 ? ? ? ? ? "     // op r/m32, imm32 (modrm + imm vary)
-            "48 8D 04 1C "      // lea rax, [rsp+rbx]
-            "48 89 CB "         // mov rbx, rcx
-            "48 89 44 24 ? "    // mov [rsp+disp8], rax
-            "48 8D 4C 24 ? "    // lea rcx, [rsp+disp8]
-            "48 8D 05 ? ? ? ? " // lea rax, [rip+disp32]
-            "48 89 44 24 ?"
-        );
-
-        if (mono_assembly_get_image_sig)
-        {
-            log_debug_ptr("mono_assembly_get_image", mono_assembly_get_image_sig);
-            g_mono_assembly_get_image_ptr = reinterpret_cast<void*>(mono_assembly_get_image_sig);
-            return g_mono_assembly_get_image_ptr.value();
-        }
-
-        log_error_missing_ptr("mono_assembly_get_image");
-        g_mono_assembly_get_image_ptr = nullptr;
-        return nullptr;
-    }
-
-    return g_mono_assembly_get_image_ptr.value();
-}
-
-
 void* mono_assembly_get_image(MonoAssembly* assembly)
 {
-    auto func = reinterpret_cast<mono_assembly_get_image_t>(get_mono_assembly_get_image_ptr());
-    if (!func)
-    {
-        log_error("mono_assembly_get_image function pointer is null.");
-        return nullptr;
-    }
-
-    return func(assembly);
+    return assembly->image;
 }

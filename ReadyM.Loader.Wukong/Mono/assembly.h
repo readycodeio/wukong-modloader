@@ -50,5 +50,4 @@ bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>&
 void* get_mono_assembly_request_open_ptr();
 void* mono_assembly_request_open(const std::filesystem::path& filename);
 
-void* get_mono_assembly_get_image_ptr();
 void* mono_assembly_get_image(MonoAssembly* assembly);
