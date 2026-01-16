@@ -14,7 +14,7 @@ if (-not (Test-Path $solutionPath)) {
 }
 
 Write-Output "Building solution $solutionPath in configuration $Configuration..."
-$buildOutput = MSBuild $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild
+$buildOutput = MSBuild.exe $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild
 
 # 2. Extract version number from build output
 $pattern = '\s*Build Version:\s*(?<ver>\d+(\.\d+){3})'
