@@ -22,15 +22,11 @@ typedef void* (*mono_assembly_request_open_t)(const char* filename, const MonoAs
 typedef void* (*mono_assembly_get_image_t)(MonoAssembly* assembly);
 
 
-static std::optional<void***> g_bundles_ptr;
-static std::optional<void*> g_mono_assembly_request_open_ptr;
-static std::optional<void*> g_mono_register_bundled_assemblies_ptr;
-static std::optional<void*> g_mono_assembly_get_image_ptr;
-
-
 void*** get_bundles_ptr()
 {
-    if (!g_bundles_ptr.has_value())
+    static std::optional<void***> s_bundles_ptr;
+    
+    if (!s_bundles_ptr.has_value())
     {
         uint64_t bundles_user_func = signature(
             "4c 8b 1d ? ? ? ? "
@@ -49,19 +45,19 @@ void*** get_bundles_ptr()
         if (!bundles_user_func)
         {
             log_error_missing_ptr("bundles_user_func");
-            g_bundles_ptr = nullptr;
+            s_bundles_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("bundles_user_func", bundles_user_func);
 
         uint32_t bundles_offset = *reinterpret_cast<uint32_t*>(bundles_user_func + 3);
-        g_bundles_ptr = reinterpret_cast<void***>(bundles_user_func + 7 + bundles_offset);
+        s_bundles_ptr = reinterpret_cast<void***>(bundles_user_func + 7 + bundles_offset);
 
         log_debug_ptr("bundles", bundles_offset);
     }
 
-    return g_bundles_ptr.value();
+    return s_bundles_ptr.value();
 }
 
 
@@ -94,7 +90,9 @@ bool mono_register_bundled_assemblies(MonoBundledAssembly** assemblies)
 
 void* get_mono_register_bundled_assemblies_ptr()
 {
-    if (!g_mono_register_bundled_assemblies_ptr.has_value())
+    static std::optional<void*> s_mono_register_bundled_assemblies_ptr;
+
+    if (!s_mono_register_bundled_assemblies_ptr.has_value())
     {
         auto bundles_ptr = reinterpret_cast<uint64_t>(get_bundles_ptr());
         if (!bundles_ptr)
@@ -118,15 +116,15 @@ void* get_mono_register_bundled_assemblies_ptr()
         if (!mono_register_bundled_assemblies)
         {
             log_error_missing_ptr("mono_register_bundled_assemblies");
-            g_mono_register_bundled_assemblies_ptr = nullptr;
+            s_mono_register_bundled_assemblies_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_register_bundled_assemblies", mono_register_bundled_assemblies);
-        g_mono_register_bundled_assemblies_ptr = reinterpret_cast<void*>(mono_register_bundled_assemblies);
+        s_mono_register_bundled_assemblies_ptr = reinterpret_cast<void*>(mono_register_bundled_assemblies);
     }
 
-    return g_mono_register_bundled_assemblies_ptr.value();
+    return s_mono_register_bundled_assemblies_ptr.value();
 }
 
 
@@ -285,7 +283,9 @@ bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>&
 
 void* get_mono_assembly_request_open_ptr()
 {
-    if (!g_mono_assembly_request_open_ptr.has_value())
+    static std::optional<void*> s_mono_assembly_request_open_ptr;
+
+    if (!s_mono_assembly_request_open_ptr.has_value())
     {
         auto mono_assembly_request_open = signature(
             "40 55 41 56 41 57 48 8d ac 24 40 ff ff ff 48 81 ec c0 01 00 00 48 8b 05 ? ? ? ? 48 33 c4 48 89 85 90 00 00 00 48 89 4d 90"
@@ -294,15 +294,15 @@ void* get_mono_assembly_request_open_ptr()
         if (!mono_assembly_request_open)
         {
             log_error_missing_ptr("mono_assembly_request_open");
-            g_mono_assembly_request_open_ptr = nullptr;
+            s_mono_assembly_request_open_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_assembly_request_open", mono_assembly_request_open);
-        g_mono_assembly_request_open_ptr = reinterpret_cast<void*>(mono_assembly_request_open);
+        s_mono_assembly_request_open_ptr = reinterpret_cast<void*>(mono_assembly_request_open);
     }
 
-    return g_mono_assembly_request_open_ptr.value();
+    return s_mono_assembly_request_open_ptr.value();
 }
 
 

@@ -6,12 +6,11 @@
 #include "Memory/scanner.h"
 
 
-static std::optional<void*> g_glib_new0_ptr;
-
-
 void* get_glib_new0_ptr()
 {
-    if (!g_glib_new0_ptr.has_value())
+    static std::optional<void*> s_glib_new0_ptr;
+
+    if (!s_glib_new0_ptr.has_value())
     {
         uint64_t g_new0_ptr_offset = signature(
             "40 53 "
@@ -25,18 +24,18 @@ void* get_glib_new0_ptr()
             "48 85 c0 "
             "75 ?"
         );
-        g_glib_new0_ptr = reinterpret_cast<void*(*)(size_t)>(g_new0_ptr_offset);
+        s_glib_new0_ptr = reinterpret_cast<void*(*)(size_t)>(g_new0_ptr_offset);
 
-        if (g_glib_new0_ptr == nullptr)
+        if (s_glib_new0_ptr == nullptr)
         {
             log_error_missing_ptr("glib_new0");
             return nullptr;
         }
 
-        log_debug_ptr("glib_new0", reinterpret_cast<void*>(g_glib_new0_ptr.value()));
+        log_debug_ptr("glib_new0", reinterpret_cast<void*>(s_glib_new0_ptr.value()));
     }
 
-    return g_glib_new0_ptr.value();
+    return s_glib_new0_ptr.value();
 }
 
 

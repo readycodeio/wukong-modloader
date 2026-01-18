@@ -10,12 +10,12 @@
 
 typedef MonoAssembly* (*mono_domain_assembly_open_t)(void* domain, const char* name);
 
-static std::optional<void*> g_mono_domain_assembly_open_ptr;
-
 
 void* get_mono_domain_assembly_open_ptr()
 {
-    if (!g_mono_domain_assembly_open_ptr.has_value())
+    static std::optional<void*> s_mono_domain_assembly_open_ptr;
+
+    if (!s_mono_domain_assembly_open_ptr.has_value())
     {
         auto mono_domain_assembly_open = signature(
             "4c 8b dc "
@@ -33,15 +33,15 @@ void* get_mono_domain_assembly_open_ptr()
         if (!mono_domain_assembly_open)
         {
             log_error_missing_ptr("mono_domain_assembly_open");
-            g_mono_domain_assembly_open_ptr = nullptr;
+            s_mono_domain_assembly_open_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_domain_assembly_open", mono_domain_assembly_open);
-        g_mono_domain_assembly_open_ptr = reinterpret_cast<void*>(mono_domain_assembly_open);
+        s_mono_domain_assembly_open_ptr = reinterpret_cast<void*>(mono_domain_assembly_open);
     }
 
-    return g_mono_domain_assembly_open_ptr.value();
+    return s_mono_domain_assembly_open_ptr.value();
 }
 
 

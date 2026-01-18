@@ -8,14 +8,12 @@ typedef void* (*mono_method_desc_new_t)(const char* name, bool include_namespace
 typedef void* (*mono_method_desc_search_in_image_t)(void* desc, void* image);
 typedef void (*mono_method_desc_free_t)(void* desc);
 
-static std::optional<void*> g_mono_method_desc_new_ptr;
-static std::optional<void*> g_mono_method_desc_search_in_image_ptr;
-static std::optional<void*> g_mono_method_desc_free_ptr;
-
 
 void* get_mono_method_desc_new_ptr()
 {
-    if (!g_mono_method_desc_new_ptr.has_value())
+    static std::optional<void*> s_mono_method_desc_new_ptr;
+
+    if (!s_mono_method_desc_new_ptr.has_value())
     {
         auto mono_method_desc_new = signature(
             "40 53 "
@@ -34,15 +32,15 @@ void* get_mono_method_desc_new_ptr()
         if (!mono_method_desc_new)
         {
             log_error_missing_ptr("mono_method_desc_new");
-            g_mono_method_desc_new_ptr = nullptr;
+            s_mono_method_desc_new_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_method_desc_new", mono_method_desc_new);
-        g_mono_method_desc_new_ptr = reinterpret_cast<void*>(mono_method_desc_new);
+        s_mono_method_desc_new_ptr = reinterpret_cast<void*>(mono_method_desc_new);
     }
 
-    return g_mono_method_desc_new_ptr.value();
+    return s_mono_method_desc_new_ptr.value();
 }
 
 
@@ -61,7 +59,9 @@ void* mono_method_desc_new(const char* name, bool include_namespace)
 
 void* get_mono_method_desc_search_in_image_ptr()
 {
-    if (!g_mono_method_desc_search_in_image_ptr.has_value())
+    static std::optional<void*> s_mono_method_desc_search_in_image_ptr;
+
+    if (!s_mono_method_desc_search_in_image_ptr.has_value())
     {
         auto mono_method_desc_search_in_image = signature(
             "48 89 5c 24 08 "
@@ -84,15 +84,15 @@ void* get_mono_method_desc_search_in_image_ptr()
         if (!mono_method_desc_search_in_image)
         {
             log_error_missing_ptr("mono_method_desc_search_in_image");
-            g_mono_method_desc_search_in_image_ptr = nullptr;
+            s_mono_method_desc_search_in_image_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_method_desc_search_in_image", mono_method_desc_search_in_image);
-        g_mono_method_desc_search_in_image_ptr = reinterpret_cast<void*>(mono_method_desc_search_in_image);
+        s_mono_method_desc_search_in_image_ptr = reinterpret_cast<void*>(mono_method_desc_search_in_image);
     }
 
-    return g_mono_method_desc_search_in_image_ptr.value();
+    return s_mono_method_desc_search_in_image_ptr.value();
 }
 
 
@@ -111,7 +111,9 @@ void* mono_method_desc_search_in_image(void* desc, void* image)
 
 void* get_mono_method_desc_free_ptr()
 {
-    if (!g_mono_method_desc_free_ptr.has_value())
+    static std::optional<void*> s_mono_method_desc_free_ptr;
+
+    if (!s_mono_method_desc_free_ptr.has_value())
     {
         auto mono_method_desc_free = signature(
             "40 53 "
@@ -129,15 +131,15 @@ void* get_mono_method_desc_free_ptr()
         if (!mono_method_desc_free)
         {
             log_error_missing_ptr("mono_method_desc_free");
-            g_mono_method_desc_free_ptr = nullptr;
+            s_mono_method_desc_free_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_method_desc_free", mono_method_desc_free);
-        g_mono_method_desc_free_ptr = reinterpret_cast<void*>(mono_method_desc_free);
+        s_mono_method_desc_free_ptr = reinterpret_cast<void*>(mono_method_desc_free);
     }
 
-    return g_mono_method_desc_free_ptr.value();
+    return s_mono_method_desc_free_ptr.value();
 }
 
 

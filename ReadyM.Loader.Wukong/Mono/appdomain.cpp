@@ -11,13 +11,11 @@
 typedef int (*ves_icall_System_AppDomain_ExecuteAssembly_t)(MonoAppDomainHandle ad, MonoReflectionAssemblyHandle refass, void** args, MonoError* error);
 
 
-static std::optional<void*> g_ves_icall_System_AppDomain_ExecuteAssembly_ptr;
-static std::optional<void**> g_domain_ptr;
-
-
 void** get_mono_get_root_domain_ptr()
 {
-    if (!g_domain_ptr.has_value())
+    static std::optional<void**> s_domain_ptr;
+
+    if (!s_domain_ptr.has_value())
     {
         auto domain_user_func = signature(
             "F0 FF 88 B0 00 00 00 48 8B 05 ? ? ? ? 48 3B D8 49 0F 44 C4"
@@ -26,19 +24,19 @@ void** get_mono_get_root_domain_ptr()
         if (!domain_user_func)
         {
             log_error_missing_ptr("domain_user_func");    
-            g_domain_ptr = nullptr;
+            s_domain_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("domain_user_func", domain_user_func);
 
         auto domain_offset = *reinterpret_cast<int*>(domain_user_func + 10);
-        g_domain_ptr = reinterpret_cast<void**>(domain_user_func + 10 + domain_offset + 4);
+        s_domain_ptr = reinterpret_cast<void**>(domain_user_func + 10 + domain_offset + 4);
         
-        log_debug_ptr("domain_ptr", g_domain_ptr.value());
+        log_debug_ptr("domain_ptr", s_domain_ptr.value());
     }
 
-    return g_domain_ptr.value();
+    return s_domain_ptr.value();
 }
 
 
@@ -57,7 +55,9 @@ void* mono_get_root_domain()
 
 void* get_ves_icall_System_AppDomain_ExecuteAssembly_ptr()
 {
-    if (!g_ves_icall_System_AppDomain_ExecuteAssembly_ptr.has_value())
+    static std::optional<void*> s_ves_icall_System_AppDomain_ExecuteAssembly_ptr;
+    
+    if (!s_ves_icall_System_AppDomain_ExecuteAssembly_ptr.has_value())
     {
         auto ves_icall_System_AppDomain_ExecuteAssembly = signature(
             "48 89 5C 24 08 55 56 57 41 56 41 57 48 83 EC 50 48 89 94 24 88 00 00 00"
@@ -66,15 +66,15 @@ void* get_ves_icall_System_AppDomain_ExecuteAssembly_ptr()
         if (!ves_icall_System_AppDomain_ExecuteAssembly)
         {
             log_error_missing_ptr("ves_icall_System_AppDomain_ExecuteAssembly");
-            g_ves_icall_System_AppDomain_ExecuteAssembly_ptr = nullptr;
+            s_ves_icall_System_AppDomain_ExecuteAssembly_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("ves_icall_System_AppDomain_ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly);
-        g_ves_icall_System_AppDomain_ExecuteAssembly_ptr = reinterpret_cast<ves_icall_System_AppDomain_ExecuteAssembly_t>(ves_icall_System_AppDomain_ExecuteAssembly);
+        s_ves_icall_System_AppDomain_ExecuteAssembly_ptr = reinterpret_cast<ves_icall_System_AppDomain_ExecuteAssembly_t>(ves_icall_System_AppDomain_ExecuteAssembly);
     }
 
-    return g_ves_icall_System_AppDomain_ExecuteAssembly_ptr.value();
+    return s_ves_icall_System_AppDomain_ExecuteAssembly_ptr.value();
 }
 
 

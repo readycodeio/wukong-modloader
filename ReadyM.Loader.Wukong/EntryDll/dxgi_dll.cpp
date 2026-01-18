@@ -1,7 +1,5 @@
 ﻿#pragma unmanaged
-#include "dxgi_dll.h"
 #include <windows.h>
-#include <dxgi.h>
 
 #include "Logger/logger.h"
 #include "Windows/constants.h"
@@ -10,23 +8,49 @@ static HMODULE h_module_dll = nullptr;
 static const wchar_t dll_fname[] = L"dxgi";
 
 
-bool init_version_dll()
+static bool deinit_hijack_dll();
+
+
+static bool init_hijack_dll()
 {
-    deinit_version_dll();
+    deinit_hijack_dll();
     wchar_t system_dir[WIN32_MAX_PATH]{0};
     GetSystemDirectoryW(system_dir, WIN32_MAX_PATH);
-    wchar_t fullpath_dll_name[WIN32_MAX_PATH]{0};
-    swprintf_s(fullpath_dll_name, WIN32_MAX_PATH, L"%s\\%s.dll", system_dir, dll_fname);
-    if ((h_module_dll = LoadLibraryW(fullpath_dll_name)) == nullptr)
+    wchar_t full_path_dll_name[WIN32_MAX_PATH]{0};
+    if (swprintf_s(full_path_dll_name, WIN32_MAX_PATH, L"%s\\%s.dll", system_dir, dll_fname) == -1)
     {
+        log_error(L"Failed to construct full path for DLL: {}", dll_fname);
+        return false;
+    }
+    if ((h_module_dll = LoadLibraryW(full_path_dll_name)) == nullptr)
+    {
+        log_error(L"Failed to load DLL: {}", dll_fname);
         return false;
     }
     log_debug(L"Successfully loaded DLL: {}", dll_fname);
+
+    if (std::atexit([] {
+        deinit_hijack_dll();
+    }) != 0)
+    {
+        log_warn(L"Failed to register DLL deinitialization at exit.");
+    }
+    
     return true;
 }
 
 
-bool deinit_version_dll()
+static bool ensure_hijack_dll()
+{
+    if (h_module_dll == nullptr)
+    {
+        return init_hijack_dll();
+    }
+    return true;
+}
+
+
+static bool deinit_hijack_dll()
 {
     if (h_module_dll != nullptr)
     {
@@ -41,6 +65,11 @@ void static setup_dll_func(T*& func_ptr, const char* func_name)
 {
     if (func_ptr != nullptr)
         return;
+
+    if (!ensure_hijack_dll())
+    {
+        std::exit(1);
+    }
     
     func_ptr = reinterpret_cast<T*>(GetProcAddress(h_module_dll, func_name));
 }
@@ -92,13 +121,18 @@ extern "C" void WINAPI UpdateHMDEmulationStatus(char p1) {
 // 2) Old API functions (Windows 8 exports that no longer appear in the newer API export set)
 
 // d3dkmthk.h
-extern "C" NTSTATUS APIENTRY D3DKMTCloseAdapter(void* pData) {
+extern "C" NTSTATUS APIENTRY D3DKMTCloseAdapter(const void* pData) {
     D(D3DKMTCloseAdapter, pData)
 }
 
 // d3dkmthk.h
 extern "C" NTSTATUS APIENTRY D3DKMTCreateAllocation(void* pData) {
     D(D3DKMTCreateAllocation, pData)
+}
+
+// d3dkmthk.h
+extern "C" NTSTATUS APIENTRY D3DKMTCreateAllocation2(void* pData) {
+    D(D3DKMTCreateAllocation2, pData)
 }
 
 // d3dkmthk.h
@@ -339,13 +373,13 @@ extern "C" HRESULT WINAPI DXGIReportAdapterConfiguration(void* p1) {
 }
 
 // https://strontic.github.io/xcyclopedia/library/dxgi.dll-CE36B98F477E09A567CC2905DC454873.html
-extern "C" void WINAPI SetAppCompatStringPointer(void* p1, size_t p2) {
+extern "C" HRESULT WINAPI SetAppCompatStringPointer(size_t p1, void* p2) {
     D(SetAppCompatStringPointer, p1, p2)
 }
 
 // 4) Remaining undocumented
 
 // Undocumented
-extern "C" void WINAPI DXGIDisableVBlankVirtualization() { 
+extern "C" HRESULT WINAPI DXGIDisableVBlankVirtualization() { 
     D(DXGIDisableVBlankVirtualization)
 }

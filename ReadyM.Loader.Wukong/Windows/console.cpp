@@ -15,7 +15,12 @@
 #include "Logger/logger.h"
 
 
-HANDLE g_log_file_handle = INVALID_HANDLE_VALUE;
+HANDLE& get_log_file_handle()
+{
+    static HANDLE s_log_file_handle = INVALID_HANDLE_VALUE;
+
+    return s_log_file_handle;
+}
 
 
 bool create_console()
@@ -60,8 +65,9 @@ bool create_console()
 bool init_console_logging()
 {
     auto log_file_path = get_log_file_path();
+    auto& log_file_handle = get_log_file_handle();
     
-    g_log_file_handle = CreateFileW(
+    log_file_handle = CreateFileW(
         log_file_path.c_str(),
         GENERIC_WRITE,
         FILE_SHARE_READ,
@@ -71,10 +77,10 @@ bool init_console_logging()
         nullptr
     );
 
-    if (g_log_file_handle == INVALID_HANDLE_VALUE)
+    if (log_file_handle == INVALID_HANDLE_VALUE)
         return false;
     
-    auto file_descriptor = _open_osfhandle(reinterpret_cast<intptr_t>(g_log_file_handle), 0);
+    auto file_descriptor = _open_osfhandle(reinterpret_cast<intptr_t>(log_file_handle), 0);
     
     if (file_descriptor == -1)
         return false;

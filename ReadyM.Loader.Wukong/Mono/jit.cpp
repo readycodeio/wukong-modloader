@@ -7,49 +7,49 @@
 #include "Memory/scanner.h"
 
 
-static std::optional<void*> g_memory_func_ptr;
-static std::optional<void*> g_mono_mode_ptr;
-
-
 void* get_memory_func_ptr()
 {
-    if (!g_memory_func_ptr.has_value())
+    static std::optional<void*> s_memory_func_ptr;
+
+    if (!s_memory_func_ptr.has_value())
     {
         uint64_t memory_func = signature("83 3D ? ? ? ? 00 0F 84 ? ? ? ? C7 84 24 ? ? 00 00 01 00 00 00");
         
         if (!memory_func)
         {
             log_error_missing_ptr("memory_func");
-            g_memory_func_ptr = nullptr;
+            s_memory_func_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("memory_func", memory_func);
-        g_memory_func_ptr = reinterpret_cast<void*>(memory_func);
+        s_memory_func_ptr = reinterpret_cast<void*>(memory_func);
     }
     
-    return g_memory_func_ptr.value();
+    return s_memory_func_ptr.value();
 }
 
 
 void* get_mono_mode_ptr()
 {
-    if (!g_mono_mode_ptr.has_value())
+    static std::optional<void*> s_mono_mode_ptr;
+
+    if (!s_mono_mode_ptr.has_value())
     {
         uint64_t mono_mode = signature("48 8D 0D ? ? ? ? E8 ? ? ? ? 89 44 24 ? 83 7C 24 ? 00");
 
         if (!mono_mode)
         {
             log_error_missing_ptr("mono_mode");
-            g_mono_mode_ptr = nullptr;
+            s_mono_mode_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_mode", mono_mode);
-        g_mono_mode_ptr = reinterpret_cast<void*>(mono_mode);
+        s_mono_mode_ptr = reinterpret_cast<void*>(mono_mode);
     }
 
-    return g_mono_mode_ptr.value();
+    return s_mono_mode_ptr.value();
 }
 
 

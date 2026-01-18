@@ -2,7 +2,6 @@
 #include <codecvt>
 #include <unordered_map>
 #include <fstream>
-#include <iterator>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <combaseapi.h>
@@ -12,7 +11,7 @@
 #include "Config/debugger.h"
 #include "Config/flags.h"
 #include "Config/path.h"
-#include "EntryDll/dxgi_dll.h"
+#include "GameMain/game_main.h"
 #include "Logger/logger.h"
 #include "Mono/appdomain.h"
 #include "Mono/assembly.h"
@@ -120,7 +119,7 @@ static bool bootstrap_init()
     MonoObject** exc_obj = reinterpret_cast<MonoObject**>(&exc);
 
     void* init_logging_params[2] = {
-        &g_log_file_handle,
+        &get_log_file_handle(),
         nullptr
     };
 
@@ -664,13 +663,8 @@ static bool init_embed_runtime()
 }
 
 
-static void init_dll(HMODULE hModule)
+static void init_main()
 {
-    DisableThreadLibraryCalls(hModule);
-    g_hModule = hModule;
-
-    if (!init_version_dll())
-        return;
     if (!init_pak_loading())
         return;
     if (!init_embed_runtime())
@@ -678,9 +672,19 @@ static void init_dll(HMODULE hModule)
 }
 
 
+static void init_dll(HMODULE hModule)
+{
+    DisableThreadLibraryCalls(hModule);
+    g_hModule = hModule;
+
+    if (!intercept_b1_main(&init_main))
+        std::exit(1);
+}
+
+
 static void deinit_dll()
 {
-    deinit_version_dll();
+    // no-op, dll deinitialization is done via std::atexit
 }
 
 

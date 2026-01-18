@@ -9,12 +9,12 @@
 typedef MonoObject* (*mono_runtime_invoke_t)(void* method, void* obj, void **params, MonoObject **exc);
 typedef MonoString* (*mono_object_try_to_string_t)(MonoObject* obj, MonoObject** exc, MonoError* error);
 
-static std::optional<void*> g_mono_runtime_invoke_ptr;
-static std::optional<void*> g_mono_object_try_to_string_ptr;
 
 void* get_mono_runtime_invoke_ptr()
 {
-    if (!g_mono_runtime_invoke_ptr.has_value())
+    static std::optional<void*> s_mono_runtime_invoke_ptr;
+
+    if (!s_mono_runtime_invoke_ptr.has_value())
     {
         auto mono_runtime_invoke = signature(
             "48 89 5c 24 08 "
@@ -35,15 +35,15 @@ void* get_mono_runtime_invoke_ptr()
         if (!mono_runtime_invoke)
         {
             log_error_missing_ptr("mono_runtime_invoke");
-            g_mono_runtime_invoke_ptr = nullptr;
+            s_mono_runtime_invoke_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_runtime_invoke", mono_runtime_invoke);
-        g_mono_runtime_invoke_ptr = reinterpret_cast<void*>(mono_runtime_invoke);
+        s_mono_runtime_invoke_ptr = reinterpret_cast<void*>(mono_runtime_invoke);
     }
 
-    return g_mono_runtime_invoke_ptr.value();
+    return s_mono_runtime_invoke_ptr.value();
 }
 
 
@@ -62,7 +62,9 @@ MonoObject* mono_runtime_invoke(void* method, void* obj, void **params, MonoObje
 
 void* get_mono_object_try_to_string_ptr()
 {
-    if (!g_mono_object_try_to_string_ptr.has_value())
+    static std::optional<void*> s_mono_object_try_to_string_ptr;
+
+    if (!s_mono_object_try_to_string_ptr.has_value())
     {
         auto mono_object_try_to_string = signature(
             "48 89 5c 24 08 "
@@ -83,15 +85,15 @@ void* get_mono_object_try_to_string_ptr()
         if (!mono_object_try_to_string)
         {
             log_error_missing_ptr("mono_object_try_to_string");
-            g_mono_object_try_to_string_ptr = nullptr;
+            s_mono_object_try_to_string_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mono_object_try_to_string", mono_object_try_to_string);
-        g_mono_object_try_to_string_ptr = reinterpret_cast<void*>(mono_object_try_to_string);
+        s_mono_object_try_to_string_ptr = reinterpret_cast<void*>(mono_object_try_to_string);
     }
 
-    return g_mono_object_try_to_string_ptr.value();
+    return s_mono_object_try_to_string_ptr.value();
 }
 
 

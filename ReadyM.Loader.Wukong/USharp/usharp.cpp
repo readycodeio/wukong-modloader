@@ -12,15 +12,11 @@
 #include "Memory/scanner.h"
 
 
-static std::optional<int32_t*> g_usharp_use_system_env_var_switch_ptr;
-static std::optional<void*> g_mono_sbd_env_options_ptr;
-
-static std::string g_debugger_agent_opts;
-
-
 int32_t* get_usharp_use_system_env_var_switch_ptr()
 {
-    if (!g_usharp_use_system_env_var_switch_ptr.has_value())
+    static std::optional<int32_t*> s_usharp_use_system_env_var_switch_ptr;
+
+    if (!s_usharp_use_system_env_var_switch_ptr.has_value())
     {
         // "USharp Enable HookEnvVar" unicode string
         uint64_t usharp_enable_hookenv = signature("55 00 53 00 68 00 61 00 72 00 70 00 20 00 45 00 6E 00 61 00 62 00 6C 00 65 00 20 00 48 00 6F 00 6F 00 6B 00 45 00 6E 00 76 00 56 00 61 00 72 00 00 00");
@@ -28,7 +24,7 @@ int32_t* get_usharp_use_system_env_var_switch_ptr()
         if (!usharp_enable_hookenv)
         {
             log_error_missing_ptr("usharp_enable_hookenv");
-            g_usharp_use_system_env_var_switch_ptr = nullptr;
+            s_usharp_use_system_env_var_switch_ptr = nullptr;
             return nullptr;
         }
 
@@ -56,19 +52,19 @@ int32_t* get_usharp_use_system_env_var_switch_ptr()
         if (!usharp_enable_user_func)
         {
             log_error_missing_ptr("usharp_enable_user_func");
-            g_usharp_use_system_env_var_switch_ptr = nullptr;
+            s_usharp_use_system_env_var_switch_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("usharp_enable_user_func", usharp_enable_user_func);
         
         uint32_t use_system_env_var_switch_offset = *reinterpret_cast<uint32_t*>(usharp_enable_user_func + 22);
-        g_usharp_use_system_env_var_switch_ptr = reinterpret_cast<int32_t*>((usharp_enable_user_func + 26) + use_system_env_var_switch_offset);
+        s_usharp_use_system_env_var_switch_ptr = reinterpret_cast<int32_t*>((usharp_enable_user_func + 26) + use_system_env_var_switch_offset);
 
-        log_debug_ptr("usharp_use_system_env_var_switch", g_usharp_use_system_env_var_switch_ptr.value());
+        log_debug_ptr("usharp_use_system_env_var_switch", s_usharp_use_system_env_var_switch_ptr.value());
     }
 
-    return g_usharp_use_system_env_var_switch_ptr.value();
+    return s_usharp_use_system_env_var_switch_ptr.value();
 }
 
 
@@ -94,28 +90,32 @@ bool usharp_use_system_env_var_switch(bool enable)
 
 void* get_mono_sbd_env_options_ptr()
 {
-    if (!g_mono_sbd_env_options_ptr.has_value())
+    static std::optional<void*> s_mono_sbd_env_options_ptr;
+
+    if (!s_mono_sbd_env_options_ptr.has_value())
     {
         auto mini_init_ptr = get_mini_init_ptr();
         
         if (!mini_init_ptr)
         {
-            g_mono_sbd_env_options_ptr = nullptr;
+            s_mono_sbd_env_options_ptr = nullptr;
             return nullptr;
         }
 
         uint32_t mono_sbd_env_options_offset = *reinterpret_cast<uint32_t*>(reinterpret_cast<uint64_t>(mini_init_ptr) + 47);
-        g_mono_sbd_env_options_ptr = reinterpret_cast<void*>((reinterpret_cast<uint64_t>(mini_init_ptr) + 51) + mono_sbd_env_options_offset);
+        s_mono_sbd_env_options_ptr = reinterpret_cast<void*>((reinterpret_cast<uint64_t>(mini_init_ptr) + 51) + mono_sbd_env_options_offset);
 
-        log_debug_ptr("mono_sbd_env_options", g_mono_sbd_env_options_ptr.value());
+        log_debug_ptr("mono_sbd_env_options", s_mono_sbd_env_options_ptr.value());
     }
 
-    return g_mono_sbd_env_options_ptr.value();
+    return s_mono_sbd_env_options_ptr.value();
 }
 
 
 bool set_mono_sbd_env_options(const std::string& debugger_agent_opts)
 {
+    static std::string s_debugger_agent_opts;
+
     auto mono_sbd_env_options_ptr = get_mono_sbd_env_options_ptr();
 
     if (!mono_sbd_env_options_ptr)
@@ -130,8 +130,8 @@ bool set_mono_sbd_env_options(const std::string& debugger_agent_opts)
     
     const char* patch_data[1];
 
-    g_debugger_agent_opts = debugger_agent_opts;
-    patch_data[0] = g_debugger_agent_opts.c_str();
+    s_debugger_agent_opts = debugger_agent_opts;
+    patch_data[0] = s_debugger_agent_opts.c_str();
 
     return patch_set_data(g_main_module_name, mono_sdb_env_options_rva, &patch_data, sizeof(char*));
 }
@@ -203,7 +203,7 @@ bool intercept_csharp_loader_x_load_runtimes(void(*callback)())
     log_debug_ptr("csharp_loader_x_load_runtimes_x_epilogue", csharp_loader_x_load_runtimes_x_epilogue);
 
     uint8_t instr_patch[] = {
-        // MOV RCX, <callback_trampoline>
+        // MOV RCX, <trampoline>
         0x48, 0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // JMP RCX
         0xFF, 0xE1

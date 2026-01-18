@@ -12,13 +12,12 @@
 #include "Mono/glib.h"
 
 
-static std::optional<BundledSymfile**> g_bundled_symfiles_ptr;
-static std::optional<void*> g_mono_debug_init_ptr;
-
 
 BundledSymfile** get_bundled_symfiles_ptr()
 {
-    if (!g_bundled_symfiles_ptr.has_value())
+    static std::optional<BundledSymfile**> s_bundled_symfiles_ptr;
+
+    if (!s_bundled_symfiles_ptr.has_value())
     {
         uint64_t bundled_symfiles_user_func_ptr = signature(
             "48 8b cb "
@@ -44,7 +43,7 @@ BundledSymfile** get_bundled_symfiles_ptr()
         if (!bundled_symfiles_user_func_ptr)
         {
             log_error_missing_ptr("bundled_symfiles_user_func");
-            g_bundled_symfiles_ptr = nullptr;
+            s_bundled_symfiles_ptr = nullptr;
             return nullptr;
         }
 
@@ -52,12 +51,12 @@ BundledSymfile** get_bundled_symfiles_ptr()
         
         uint32_t bundled_symfiles_offset = *reinterpret_cast<uint32_t*>(bundled_symfiles_user_func_ptr + 11);
         uint64_t instr_base = bundled_symfiles_user_func_ptr + 15;
-        g_bundled_symfiles_ptr = reinterpret_cast<BundledSymfile**>(instr_base + bundled_symfiles_offset);
+        s_bundled_symfiles_ptr = reinterpret_cast<BundledSymfile**>(instr_base + bundled_symfiles_offset);
         
         log_debug_ptr("bundled_symfiles", bundled_symfiles_user_func_ptr);
     }
 
-    return g_bundled_symfiles_ptr.value();
+    return s_bundled_symfiles_ptr.value();
 }
 
 
@@ -74,15 +73,17 @@ bool mono_register_symfile_for_assembly(char* assembly_name, const uint8_t *raw_
     bsymfile->aname = assembly_name;
     bsymfile->raw_contents = raw_contents;
     bsymfile->size = size;
-    bsymfile->next = *g_bundled_symfiles_ptr.value();
-    *(g_bundled_symfiles_ptr.value()) = bsymfile;
+    bsymfile->next = *bundled_symfiles_ptr;
+    *bundled_symfiles_ptr = bsymfile;
     return true;
 }
 
 
 void* get_mono_debug_init_ptr()
 {
-    if (!g_mono_debug_init_ptr.has_value())
+    static std::optional<void*> s_mono_debug_init_ptr;
+
+    if (!s_mono_debug_init_ptr.has_value())
     {
         uint64_t mono_debug_init = signature(
             "40 53 "               // push rbx
@@ -99,15 +100,15 @@ void* get_mono_debug_init_ptr()
         if (!mono_debug_init)
         {
             log_error_missing_ptr("debug_init");
-            g_mono_debug_init_ptr = nullptr;
+            s_mono_debug_init_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("debug_init", mono_debug_init);
-        g_mono_debug_init_ptr = reinterpret_cast<void*>(mono_debug_init);
+        s_mono_debug_init_ptr = reinterpret_cast<void*>(mono_debug_init);
     }
 
-    return g_mono_debug_init_ptr.value();
+    return s_mono_debug_init_ptr.value();
 }
 
 

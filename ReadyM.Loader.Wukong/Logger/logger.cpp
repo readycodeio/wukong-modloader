@@ -8,9 +8,17 @@
 #include "Config/logger-config.h"
 
 
-std::unique_ptr<std::ostream> g_log_file_stream;
-std::unique_ptr<std::wostream> g_log_file_wstream;
-int g_log_file_stream_fd = -1;
+std::optional<std::ostream>& get_log_file_stream()
+{
+    static std::optional<std::ostream> s_log_file_stream = std::optional<std::ostream>();
+    return s_log_file_stream;
+}
+
+std::optional<std::wostream>& get_log_file_wstream()
+{
+    static std::optional<std::wostream> s_log_file_stream = std::optional<std::wostream>();
+    return s_log_file_stream;
+}
 
 
 void log_debug_ptr(const std::string& name, void* ptr)
@@ -33,6 +41,9 @@ void init_logging(std::filebuf& log_file_buffer)
 {
     static std::wbuffer_convert<std::codecvt_utf8<wchar_t>> log_file_conv(&log_file_buffer);
 
-    g_log_file_stream = std::make_unique<std::ostream>(&log_file_buffer);
-    g_log_file_wstream = std::make_unique<std::wostream>(&log_file_conv);
+    auto& log_file_stream = get_log_file_stream();
+    auto& log_file_wstream = get_log_file_wstream();
+
+    log_file_stream.emplace(&log_file_buffer);
+    log_file_wstream.emplace(&log_file_conv);
 }

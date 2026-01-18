@@ -6,12 +6,11 @@
 #include "Memory/scanner.h"
 
 
-static std::optional<void*> g_mini_init_ptr;
-
-
 void* get_mini_init_ptr()
 {
-    if (!g_mini_init_ptr.has_value())
+    static std::optional<void*> s_mini_init_ptr;
+
+    if (!s_mini_init_ptr.has_value())
     {
         uint64_t mini_init = signature(
             "40 55 "
@@ -36,13 +35,13 @@ void* get_mini_init_ptr()
         if (mini_init == 0)
         {
             log_error_missing_ptr("mini_init");
-            g_mini_init_ptr = nullptr;
+            s_mini_init_ptr = nullptr;
             return nullptr;
         }
 
         log_debug_ptr("mini_init", mini_init);
-        g_mini_init_ptr = reinterpret_cast<void*>(mini_init);
+        s_mini_init_ptr = reinterpret_cast<void*>(mini_init);
     }
 
-    return g_mini_init_ptr.value();
+    return s_mini_init_ptr.value();
 }

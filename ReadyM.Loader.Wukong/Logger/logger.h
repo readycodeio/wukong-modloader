@@ -10,11 +10,8 @@
 #include <utility>
 
 
-static std::mutex g_log_mutex;
-
-extern std::unique_ptr<std::ostream> g_log_file_stream;
-extern std::unique_ptr<std::wostream> g_log_file_wstream;
-extern int g_log_file_stream_fd;
+std::optional<std::ostream>& get_log_file_stream();
+std::optional<std::wostream>& get_log_file_wstream();
 
 
 template<typename T>
@@ -73,18 +70,29 @@ static inline std::string get_timestamp() {
 }
 
 
+static std::mutex& get_log_mutex()
+{
+    static std::mutex s_log_mutex; 
+    return s_log_mutex;
+}
+
+
 template<typename... FormatArgs>
     requires (is_wformatable<FormatArgs> && ...)
 void log_impl(const std::wstring& prefix, std::wformat_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
 {
-    std::lock_guard lock(g_log_mutex);
+    auto& log_mutex = get_log_mutex();
+
+    std::lock_guard lock(log_mutex);
 
     std::wstring message = std::vformat(fmt.get(), std::make_wformat_args(fmt_args...));
 
     auto timestamp = get_wtimestamp();
     std::wcout              << timestamp << L" [" << prefix << L"] " << message << L"\n" << std::flush;
-    if (g_log_file_wstream != nullptr)
-        *g_log_file_wstream << timestamp << L" [" << prefix << L"] " << message << L"\n" << std::flush;
+
+    auto& log_file_wstream = get_log_file_wstream();
+    if (log_file_wstream.has_value())
+        *log_file_wstream   << timestamp << L" [" << prefix << L"] " << message << L"\n" << std::flush;
 }
 
 
@@ -92,14 +100,18 @@ template<typename... FormatArgs>
     requires (is_formatable<FormatArgs> && ...)
 void log_impl(const std::string& prefix, std::format_string<FormatArgs...> fmt, FormatArgs&&... fmt_args)
 {
-    std::lock_guard lock(g_log_mutex);
+    auto& log_mutex = get_log_mutex();
+
+    std::lock_guard lock(log_mutex);
 
     std::string message = std::vformat(fmt.get(), std::make_format_args(fmt_args...));
 
     auto timestamp = get_timestamp();
     std::cout               << timestamp << " [" << prefix << "] " << message << "\n" << std::flush;
-    if (g_log_file_stream != nullptr)
-        *g_log_file_stream  << timestamp << " [" << prefix << "] " << message << "\n" << std::flush;
+
+    auto& log_file_stream = get_log_file_stream();
+    if (log_file_stream.has_value())
+        *log_file_stream    << timestamp << " [" << prefix << "] " << message << "\n" << std::flush;
 }
 
 
