@@ -79,6 +79,7 @@ $configFiles = @(
     "debugger-agent.txt"
 )
 $pakFiles = @(
+    "CoreMp.pak",
     "WukongMp.pak"
 )
 
