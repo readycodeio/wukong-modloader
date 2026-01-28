@@ -20,16 +20,23 @@ function Find-GameInstallPath {
         # Steam registry key not found, continue to Epic
     }
 
-    # Try Epic Games
-    $epicPaths = @(
-        "C:\Program Files\Epic Games\BlackMythWukong",
-        "D:\Epic Games\BlackMythWukong",
-        "${env:ProgramFiles}\Epic Games\BlackMythWukong"
-    )
-    foreach ($epicPath in $epicPaths) {
-        if (Test-Path $epicPath) {
-            Write-Host "Discovered game in Epic Games: $epicPath"
-            return $epicPath
+    # Try Epic Games via manifest files
+    $epicManifestFolder = "C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
+    if (Test-Path $epicManifestFolder) {
+        $manifestFiles = Get-ChildItem -Path $epicManifestFolder -Filter "*.item"
+        foreach ($manifestFile in $manifestFiles) {
+            try {
+                $manifest = Get-Content $manifestFile.FullName | ConvertFrom-Json
+                if ($manifest.AppName -eq "f53c5471fd0e47619e72b6d21a527abe") {
+                    $epicPath = $manifest.InstallLocation
+                    if (Test-Path $epicPath) {
+                        Write-Host "Discovered game in Epic Games: $epicPath"
+                        return $epicPath
+                    }
+                }
+            } catch {
+                # Skip invalid manifest files
+            }
         }
     }
 
@@ -38,6 +45,7 @@ function Find-GameInstallPath {
     Exit 1
 }
 
+$gamePath = Find-GameInstallPath
 $destRoot = Join-Path $gamePath "b1"
 
 $coopBase = "$env:APPDATA/ReadyM.Launcher/WukongMP"
