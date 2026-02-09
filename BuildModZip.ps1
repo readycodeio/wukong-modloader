@@ -1,6 +1,7 @@
 #!powershell.exe -ExecutionPolicy Bypass -File
 param(
-    [String]$Configuration="Release"
+    [String]$Configuration="Release",
+    [string]$MSBuildPath = "c:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe"
 )
 
 . ./BuildInfo.ps1
@@ -13,8 +14,15 @@ if (-not (Test-Path $solutionPath)) {
     exit 1
 }
 
+Write-Output "Restoring NuGet packages for $solutionPath..."
+nuget restore $solutionPath
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "NuGet restore failed with exit code $LASTEXITCODE"
+    exit 1
+}
+
 Write-Output "Building solution $solutionPath in configuration $Configuration..."
-$buildOutput = MSBuild.exe $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild
+$buildOutput = & $MSBuildPath $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild | Tee-Object -FilePath 'build.log'
 
 # 2. Extract version number from build output
 $pattern = '\s*Build Version:\s*(?<ver>\d+(\.\d+){3})'
