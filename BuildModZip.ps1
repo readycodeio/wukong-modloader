@@ -1,7 +1,6 @@
 #!powershell.exe -ExecutionPolicy Bypass -File
 param(
-    [String]$Configuration="Release",
-    [string]$MSBuildPath = "c:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe"
+    [String]$Configuration="Release"
 )
 
 . ./BuildInfo.ps1
@@ -22,7 +21,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Output "Building solution $solutionPath in configuration $Configuration..."
-$buildOutput = & $MSBuildPath $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild | Tee-Object -FilePath 'build.log'
+$buildOutput = MSBuild.exe $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild | Tee-Object -FilePath 'build.log'
 
 # 2. Extract version number from build output
 $pattern = '\s*Build Version:\s*(?<ver>\d+(\.\d+){3})'
