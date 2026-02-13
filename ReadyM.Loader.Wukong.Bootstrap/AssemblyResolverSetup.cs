@@ -59,8 +59,16 @@ public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, Path
             }
             else
             {
+                var otherMods = Directory.GetDirectories(settings.ModDir)
+                    .Select(Path.GetFileName)
+                    .Where(name => name != currentLoadingState.LoadingModName);
+                
+                var loadedFromOtherMods = otherMods.Select(mod => TryLoadDll(Path.Combine(settings.ModDir, mod, dllName)))
+                    .FirstOrDefault(asm => asm != null);
+                
                 result = TryLoadDll(Path.Combine(settings.ModDir, currentLoadingState.LoadingModName, dllName)) ??
                          TryLoadDll(Path.Combine(settings.ModDir, "Common", dllName)) ??
+                         loadedFromOtherMods ??
                          (currentLoadingState.CloneDir != null ? TryLoadDll(Path.Combine(currentLoadingState.CloneDir, currentLoadingState.LoadingModName, dllName)) : null) ??
                          (currentLoadingState.CloneDir != null ? TryLoadDll(Path.Combine(currentLoadingState.CloneDir, "Common", dllName)) : null) ??
                          TryLoadDll(Path.Combine(settings.LoaderDir, dllName));

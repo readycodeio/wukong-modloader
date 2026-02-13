@@ -215,10 +215,7 @@ public class ModLoader
 
                 foreach (var type in asm.GetTypes())
                 {
-                    if (type.IsAbstract)
-                        continue;
-                    
-                    if (csharpModType.IsAssignableFrom(type))
+                    if (csharpModType.IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
                     {
                         var baseType = csharpModExV2Type.IsAssignableFrom(type) ? csharpModExV2Type :
                             csharpModExType.IsAssignableFrom(type) ? csharpModExType : csharpModType;
@@ -279,7 +276,7 @@ public class ModLoader
 
     public void InitMods()
     {
-        foreach (var dir in _modRegistry.ModDirs)
+        foreach (var dir in _modRegistry.ModDirs.Reverse()) // TODO: Topological sort
         {
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;

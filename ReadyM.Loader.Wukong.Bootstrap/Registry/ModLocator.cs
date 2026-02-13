@@ -59,10 +59,8 @@ public class ModLocator(PathSettings pathSettings, ILogger logger)
             if (File.Exists(mainAsmPath))
                 modMeta.MainAsmPath = mainAsmPath;
             
-            foreach (var f in Directory.GetFiles(dir))
+            foreach (var f in Directory.GetFiles(dir, "*.dll", SearchOption.AllDirectories))
             {
-                if (!f.EndsWith(".dll"))
-                    continue;
                 if (f.EndsWith(".32.dll") || f.EndsWith(".64.dll") ||
                     f.EndsWith(".x86.dll") || f.EndsWith(".x64.dll") ||
                     f.EndsWith("-32.dll") || f.EndsWith("-64.dll") ||
