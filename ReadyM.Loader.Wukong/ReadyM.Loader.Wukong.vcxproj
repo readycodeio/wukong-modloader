@@ -301,7 +301,7 @@
     <PropertyGroup Label="Vcpkg">
         <VcpkgEnableManifest>true</VcpkgEnableManifest>
     </PropertyGroup>
-    <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PropertyGroup Label="Vcpkg">
         <VcpkgUseStatic>true</VcpkgUseStatic>
         <VcpkgInstalledDir>./vcpkg_installed</VcpkgInstalledDir>
     </PropertyGroup>

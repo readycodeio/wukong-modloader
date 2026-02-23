@@ -215,6 +215,9 @@ public class ModLoader
 
                 foreach (var type in asm.GetTypes())
                 {
+                    if (type.IsAbstract)
+                        continue;
+                    
                     if (csharpModType.IsAssignableFrom(type))
                     {
                         var baseType = csharpModExV2Type.IsAssignableFrom(type) ? csharpModExV2Type :

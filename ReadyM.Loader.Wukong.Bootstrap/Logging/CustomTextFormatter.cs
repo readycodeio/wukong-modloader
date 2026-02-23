@@ -93,7 +93,16 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
                 var frame = new StackFrame(skip);
                 var method = frame.GetMethod();
                 var methodName = method?.Name ?? "";
-                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging") || methodName.EndsWith("LogError") || methodName.EndsWith("LogCritical") || methodName.EndsWith("LogNull"))
+                var declaringTypeName = method?.DeclaringType?.Name ?? "";
+                if (methodName.EndsWith("LoggingExtensions") ||
+                    methodName.EndsWith("Logging") ||
+                    methodName.EndsWith("LogError") ||
+                    methodName.EndsWith("LogCritical") ||
+                    methodName.EndsWith("LogNull") || 
+                    methodName.EndsWith("Assert") || 
+                    declaringTypeName.EndsWith("LoggingListener") ||
+                    declaringTypeName.EndsWith("TraceListener") ||
+                    declaringTypeName.EndsWith("TraceInternal"))
                 {
                     skip++;
                     continue;
