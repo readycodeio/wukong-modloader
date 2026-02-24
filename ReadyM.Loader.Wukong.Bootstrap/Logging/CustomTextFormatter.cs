@@ -83,10 +83,10 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
         }
 
 #if DEBUG
+        var skip = 7;
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
             var threadId = Environment.CurrentManagedThreadId;
-            var skip = 7;
             MethodBase caller;
             do
             {
@@ -134,6 +134,12 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
                 textWriter.Write(inner);
                 inner = inner.InnerException;
             }
+        }
+        else if (logEntry.LogLevel is LogLevel.Critical)
+        {
+            var stackTrace = new StackTrace(skip, fNeedFileInfo: true);
+            textWriter.Write(" --TRACE--> ");
+            textWriter.Write(stackTrace.ToString());
         }
     }
 }
