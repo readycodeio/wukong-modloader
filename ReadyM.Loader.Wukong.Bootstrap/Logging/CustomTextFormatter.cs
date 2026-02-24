@@ -82,8 +82,8 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
             textWriter.Write(interpolatedMessage);
         }
 
-#if DEBUG
         var skip = 7;
+#if DEBUG
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
             var threadId = Environment.CurrentManagedThreadId;
