@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <windows.h>
-#include <stringzilla/stringzilla.h>
+#include "External/stringzilla/include/stringzilla.h"
 
 #include "Logger/logger.h"
 

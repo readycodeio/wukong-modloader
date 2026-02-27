@@ -8,7 +8,7 @@ $nativeSourceDir = "x64/$Configuration"
 $overridesSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $toplevelSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $facadesSourceDir = "ReadyM.Loader.Executable/Facades"
-$originalSourceDir = "Original"
+$binarySourceDir = "Binary"
 $pakSourceDir = "PakFiles"
 $configSourceDir = "Config"
 
@@ -20,7 +20,8 @@ $pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
 $originalNativeFiles = @(
-    "version.dll"
+    "version.dll",
+    "stringzilla_shared.dll"
 )
 $nativeFiles = @(
     "dxgi.dll",
@@ -85,7 +86,7 @@ $pakFiles = @(
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
-    @($originalNativeFiles, $originalSourceDir, $nativeDestDir),
+    @($originalNativeFiles, $binarySourceDir, $nativeDestDir),
     @($overridesFiles, $overridesSourceDir, $overridesDestDir),
     @($facadesFiles, $facadesSourceDir, $facadesDestDir),
     @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
