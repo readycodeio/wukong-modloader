@@ -47,7 +47,7 @@ public class ModLocator(PathSettings pathSettings, ILogger logger)
 
 
             var modName = Path.GetFileName(dir);
-            var modMeta = new ModMetadata()
+            var modMeta = new ModMetadata
             {
                 ModName = modName!,
                 ModDir = dir,
