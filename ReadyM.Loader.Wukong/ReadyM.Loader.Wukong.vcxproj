@@ -106,7 +106,7 @@
             <WarningLevel>EnableAllWarnings</WarningLevel>
             <Optimization>Disabled</Optimization>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>WIN32;_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>WIN32;_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_DYNAMIC_DISPATCH;DELAYIMP_INSECURE_WRITABLE_HOOKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpp20</LanguageStandard>
@@ -116,6 +116,9 @@
         <Link>
             <SubSystem>Windows</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(ProjectDir)External\stringzilla;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <DelayLoadDLLs>stringzilla_shared.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+            <AdditionalDependencies>stringzilla_shared.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -124,7 +127,7 @@
             <WarningLevel>EnableAllWarnings</WarningLevel>
             <Optimization>Disabled</Optimization>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>_DEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_DYNAMIC_DISPATCH;DELAYIMP_INSECURE_WRITABLE_HOOKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
@@ -135,6 +138,9 @@
         <Link>
             <SubSystem>Windows</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(ProjectDir)External\stringzilla;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <DelayLoadDLLs>stringzilla_shared.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+            <AdditionalDependencies>stringzilla_shared.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,7 +151,7 @@
             <FunctionLevelLinking>true</FunctionLevelLinking>
             <IntrinsicFunctions>true</IntrinsicFunctions>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>WIN32;NDEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>WIN32;NDEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_DYNAMIC_DISPATCH;DELAYIMP_INSECURE_WRITABLE_HOOKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpp20</LanguageStandard>
@@ -157,6 +163,9 @@
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <OptimizeReferences>true</OptimizeReferences>
             <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(ProjectDir)External\stringzilla;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <DelayLoadDLLs>stringzilla_shared.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+            <AdditionalDependencies>stringzilla_shared.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -167,7 +176,7 @@
             <FunctionLevelLinking>true</FunctionLevelLinking>
             <IntrinsicFunctions>true</IntrinsicFunctions>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>NDEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_USE_X86_AVX2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>NDEBUG;CPPDYNAMICLIBRARYTEMPLATE_EXPORTS;_WINDOWS;_USRDLL;SZ_DYNAMIC_DISPATCH;DELAYIMP_INSECURE_WRITABLE_HOOKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpp20</LanguageStandard>
@@ -180,6 +189,9 @@
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <OptimizeReferences>true</OptimizeReferences>
             <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(ProjectDir)External\stringzilla;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <DelayLoadDLLs>stringzilla_shared.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+            <AdditionalDependencies>stringzilla_shared.lib;delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
@@ -206,6 +218,7 @@
         <ClCompile Include="Mono\threads.cpp" />
         <ClCompile Include="Unreal\signature_check.cpp" />
         <ClCompile Include="USharp\usharp.cpp" />
+        <ClCompile Include="Utils\delay_dll.cpp" />
         <ClCompile Include="Utils\string.cpp" />
         <ClCompile Include="Windows\console.cpp" />
     </ItemGroup>
@@ -292,17 +305,11 @@
             <ExecutionDescription>Assembling %(Identity)...</ExecutionDescription>
         </MASM>
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="External\" />
+    </ItemGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
     <ImportGroup Label="ExtensionTargets">
         <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
     </ImportGroup>
-    <ImportGroup Label="ExtensionTargets">
-    </ImportGroup>
-    <PropertyGroup Label="Vcpkg">
-        <VcpkgEnableManifest>true</VcpkgEnableManifest>
-    </PropertyGroup>
-    <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <VcpkgUseStatic>true</VcpkgUseStatic>
-        <VcpkgInstalledDir>./vcpkg_installed</VcpkgInstalledDir>
-    </PropertyGroup>
 </Project>

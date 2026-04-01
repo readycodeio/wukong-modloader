@@ -82,18 +82,27 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
             textWriter.Write(interpolatedMessage);
         }
 
+        var skip = 7;
 #if DEBUG
         if (logEntry.LogLevel is LogLevel.Error or LogLevel.Critical)
         {
             var threadId = Environment.CurrentManagedThreadId;
-            var skip = 7;
             MethodBase caller;
             do
             {
                 var frame = new StackFrame(skip);
                 var method = frame.GetMethod();
                 var methodName = method?.Name ?? "";
-                if (methodName.EndsWith("LoggingExtensions") || methodName.EndsWith("Logging") || methodName.EndsWith("LogError") || methodName.EndsWith("LogCritical") || methodName.EndsWith("LogNull"))
+                var declaringTypeName = method?.DeclaringType?.Name ?? "";
+                if (methodName.EndsWith("LoggingExtensions") ||
+                    methodName.EndsWith("Logging") ||
+                    methodName.EndsWith("LogError") ||
+                    methodName.EndsWith("LogCritical") ||
+                    methodName.EndsWith("LogNull") || 
+                    methodName.EndsWith("Assert") || 
+                    declaringTypeName.EndsWith("LoggingListener") ||
+                    declaringTypeName.EndsWith("TraceListener") ||
+                    declaringTypeName.EndsWith("TraceInternal"))
                 {
                     skip++;
                     continue;
@@ -125,6 +134,12 @@ internal class CustomTextFormatter() : ConsoleFormatter("custom-text")
                 textWriter.Write(inner);
                 inner = inner.InnerException;
             }
+        }
+        else if (logEntry.LogLevel is LogLevel.Critical)
+        {
+            var stackTrace = new StackTrace(skip, fNeedFileInfo: true);
+            textWriter.Write(" --TRACE--> ");
+            textWriter.Write(stackTrace.ToString());
         }
     }
 }

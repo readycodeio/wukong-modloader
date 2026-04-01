@@ -59,10 +59,10 @@ public class ModLoader
         {
             _logger.LogDebug("Already loaded: {AssemblyName}", asm.FullName);
         }
-        
+
         _modLoadState.Clear();
         _modsInitialized.Clear();
-        
+
         if (!Directory.Exists(_pathSettings.ModDir))
         {
             _logger.LogError("Mod dir {Path} not exists", _pathSettings.ModDir);
@@ -169,7 +169,7 @@ public class ModLoader
                         renameHelper,
                         resolver
                     );
-                    
+
                     _logger.LogDebug("Copied {Path} -> {CopyPath}", asmPath, copiedAsmPath);
                     if (asmSymbols != null)
                         _logger.LogDebug("Copied {Path} -> {CopyPath}", asmSymbols, copiedAsmSymbols);
@@ -187,7 +187,7 @@ public class ModLoader
         var csharpModType = typeof(ICSharpMod);
         var csharpModExType = typeof(ICSharpModEx);
         var csharpModExV2Type = typeof(ICSharpModExV2);
-        
+
         foreach (var dir in _modRegistry.ModDirs)
         {
             var modMeta = _modRegistry.MetaByDir[dir];
@@ -215,7 +215,7 @@ public class ModLoader
 
                 foreach (var type in asm.GetTypes())
                 {
-                    if (csharpModType.IsAssignableFrom(type))
+                    if (csharpModType.IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
                     {
                         var baseType = csharpModExV2Type.IsAssignableFrom(type) ? csharpModExV2Type :
                             csharpModExType.IsAssignableFrom(type) ? csharpModExType : csharpModType;
@@ -252,7 +252,7 @@ public class ModLoader
             {
                 _logger.LogError(ex, "Loading {Path} failed:", modLoadState.LoadAsmPath);
             }
-            
+
             _currentLoadingState.LoadingModName = null;
         }
     }
@@ -280,10 +280,10 @@ public class ModLoader
         {
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
-            
+
             if (modLoadState.LoadAsmPath is null)
                 continue;
-            
+
             var modMeta = _modRegistry.MetaByDir[dir];
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -305,7 +305,7 @@ public class ModLoader
                     innerEx = innerEx.InnerException;
                 }
             }
-            
+
             _currentLoadingState.LoadingModName = null;
         }
     }
@@ -316,14 +316,14 @@ public class ModLoader
         {
             if (_loadingPhaseManager.IsLoadingCancelled)
                 break;
-            
+
             var modMeta = _modRegistry.MetaByDir[dir];
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
-            
+
             if (modLoadState.LoadAsmPath is null)
                 continue;
-            
+
 
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -355,7 +355,7 @@ public class ModLoader
             {
                 _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
             }
-            
+
             _currentLoadingState.LoadingModName = null;
         }
     }
@@ -363,7 +363,7 @@ public class ModLoader
     public void DeInitMods()
     {
         _lateInitThread?.Join();
-        
+
         var modsInitialized = new List<string>(_modsInitialized);
         modsInitialized.Reverse();
         foreach (var dir in modsInitialized)
@@ -371,7 +371,7 @@ public class ModLoader
             var modMeta = _modRegistry.MetaByDir[dir];
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
-            
+
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
             try
@@ -385,7 +385,7 @@ public class ModLoader
             {
                 _logger.LogError(ex, "Deinitializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
             }
-            
+
             _currentLoadingState.LoadingModName = null;
         }
     }
@@ -397,7 +397,7 @@ public class ModLoader
         {
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
-            
+
             try
             {
                 if (modLoadState.ModEx != null)
@@ -421,10 +421,10 @@ public class ModLoader
     public void ReloadMods()
     {
         _lateInitThread?.Join();
-        
+
         _logger.LogDebug("Fetching reload contexts");
         var reloadContexts = GetReloadContexts();
-        
+
         DeInitMods();
         LoadMods();
         InitMods();
