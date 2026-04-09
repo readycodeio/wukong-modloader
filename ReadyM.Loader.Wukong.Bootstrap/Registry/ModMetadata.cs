@@ -6,6 +6,5 @@ public class ModMetadata
     public string? ModDir;
     public int LoadOrder;
     public bool Disabled;
-    public string? MainAsmPath;
     public List<string> AllAsmPaths = [];
 }

@@ -72,7 +72,6 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
         _fallbackResolver.AddSearchDirectory(pathSettings.LoaderDir);
         _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.LoaderDir, "Overrides"));
         _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.ModDir, "Common"));
-        _fallbackResolver.AddSearchDirectory(Path.Combine(pathSettings.ModDir, "Overrides"));
 
         foreach (var dir in modRegistry.ModDirs)
         {

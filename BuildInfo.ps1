@@ -28,6 +28,12 @@ $nativeFiles = @(
     @("dxgi.pdb", $true)
 )
 $overridesFiles = @(
+    "System.Collections.Immutable.dll",
+    "System.Runtime.CompilerServices.Unsafe.dll",
+    "System.Text.Encodings.Web.dll",
+    "System.Text.Json.dll",
+    "System.Numerics.Vectors.dll",
+    "LiteNetLib.dll",
     "Microsoft.Bcl.AsyncInterfaces.dll",
     "Microsoft.Extensions.Configuration.dll",
     "Microsoft.Extensions.Configuration.Abstractions.dll",

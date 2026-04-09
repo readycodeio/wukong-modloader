@@ -117,6 +117,7 @@ public class ModLoader
         {
             var modMeta = _modRegistry.MetaByDir[dir];
             var modName = modMeta.ModName;
+            var dirName = Path.GetFileName(dir);
 
             _logger.LogDebug("Processing {Name}", modName);
             var modLoadState = new ModLoadState();
@@ -134,7 +135,7 @@ public class ModLoader
             resolver.AddSearchDirectory(Path.Combine(_pathSettings.ModDir, "ReflectionOnly"));
             if (_currentLoadingState.CloneDir != null)
             {
-                resolver.AddSearchDirectory(Path.Combine(_currentLoadingState.CloneDir, modName));
+                resolver.AddSearchDirectory(Path.Combine(_currentLoadingState.CloneDir, dirName));
                 resolver.AddSearchDirectory(Path.Combine(_currentLoadingState.CloneDir, "Common"));
                 resolver.AddSearchDirectory(Path.Combine(_currentLoadingState.CloneDir, "ReflectionOnly"));
             }
@@ -179,8 +180,21 @@ public class ModLoader
                     copiedAsmPath = asmPath;
                 }
 
-                if (asmPath == modMeta.MainAsmPath)
+                // if the assemly has a type inheriting ModBase, set it as the assembly to load for the mod
+                using var assembly = AssemblyDefinition.ReadAssembly(asmPath, new ReaderParameters
+                {
+                    ReadingMode = ReadingMode.Deferred,
+                    ReadWrite = false,
+                    AssemblyResolver = resolver,
+                    ReadSymbols = false
+                });
+                
+                var hasModBase = assembly.MainModule.Types.Any(t => t.BaseType != null && t.BaseType.FullName.Contains("ModBase"));
+                if (hasModBase)
+                {
                     modLoadState.LoadAsmPath = copiedAsmPath;
+                    _logger.LogInformation("Marked assembly for loading: {Path}", copiedAsmPath);
+                }
             }
         }
 
@@ -292,11 +306,11 @@ public class ModLoader
                 modLoadState.Mod.Init();
                 Log.Provider.Flush();
                 _modsInitialized.Add(dir);
-                _logger.LogDebug("Initialized: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogDebug("Initialized: {Name}", modLoadState.Mod.Name);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogError(ex, "Initializing {Name} failed:", modLoadState.Mod.Name);
                 // log inner exceptions
                 var innerEx = ex.InnerException;
                 while (innerEx != null)
@@ -331,7 +345,7 @@ public class ModLoader
             {
                 if (!_modsInitialized.Contains(dir))
                 {
-                    _logger.LogWarning("Skipping late init for not initialized mod: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                    _logger.LogWarning("Skipping late init for not initialized mod: {Name}", modLoadState.Mod.Name);
                     continue;
                 }
 
@@ -340,7 +354,7 @@ public class ModLoader
                     modLoadState.ModExV2.LateInit();
                     Log.Provider.Flush();
                     _modsLateInitialized.Add(dir);
-                    _logger.LogDebug("Late Initialized: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                    _logger.LogDebug("Late Initialized: {Name}", modLoadState.Mod.Name);
                 }
 
                 if (reload && modLoadState.ModEx != null)
@@ -348,12 +362,12 @@ public class ModLoader
                     reloadContexts!.TryGetValue(modLoadState.ModEx.Name, out var reloadContext);
                     modLoadState.ModEx.Reload(reloadContext);
                     Log.Provider.Flush();
-                    _logger.LogDebug("Reloaded: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                    _logger.LogDebug("Reloaded: {Name}", modLoadState.Mod.Name);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Initializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogError(ex, "Initializing {Name} failed:", modLoadState.Mod.Name);
             }
 
             _currentLoadingState.LoadingModName = null;
@@ -379,11 +393,11 @@ public class ModLoader
                 modLoadState.Mod.DeInit();
                 Log.Provider.Flush();
                 _modsInitialized.Remove(dir);
-                _logger.LogDebug("Deinitialized: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogDebug("Deinitialized: {Name}", modLoadState.Mod.Name);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Deinitializing {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogError(ex, "Deinitializing {Name} failed:", modLoadState.Mod.Name);
             }
 
             _currentLoadingState.LoadingModName = null;
@@ -404,14 +418,14 @@ public class ModLoader
                 {
                     var reloadContext = modLoadState.ModEx.GetReloadContext();
                     Log.Provider.Flush();
-                    _logger.LogDebug("Reload context for: {Name} ({Version})", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                    _logger.LogDebug("Reload context for: {Name}", modLoadState.Mod.Name);
                     if (reloadContext != null)
                         result.Add(modLoadState.ModEx.Name, reloadContext);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fetching reload context {Name} ({Version}) failed:", modLoadState.Mod.Name, modLoadState.Mod.Version);
+                _logger.LogError(ex, "Fetching reload context {Name} failed:", modLoadState.Mod.Name);
             }
         }
 

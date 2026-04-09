@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using ReadyM.Loader.Wukong.Bootstrap;
 using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Registry;
@@ -20,7 +19,7 @@ public class ModLocator(PathSettings pathSettings, ILogger logger)
         foreach (var dir in allDirs)
         {
             var modName = Path.GetFileName(dir);
-            if (modName is "Common" or "ReflectionOnly" or "Overrides")
+            if (modName is "ReflectionOnly")
                 continue;
 
             dirs.Add(dir);
@@ -67,31 +66,26 @@ public class ModLocator(PathSettings pathSettings, ILogger logger)
             return new ModRegistry();
         }
 
+        var sortedManifests = manifests.Values.OrderBy(m => loadOrders[m.UniqueId]);
+        logger.LogInformation("Mod load order:");
+        foreach (var manifest in sortedManifests)
+        {
+            logger.LogInformation("- {ModName} (ID: {ModId}, Version: {Version})", manifest.Name, manifest.UniqueId, manifest.Version);
+        }
+
         var meta = new Dictionary<string, ModMetadata>();
         foreach (var dir in dirs)
         {
             var disabledPath = Path.Combine(dir, "disabled.txt");
-            var dirName = Path.GetFileName(dir);
             var manifest = manifests[dir];
             var modMeta = new ModMetadata
             {
-                ModName = dirName,
+                ModName = manifest.Name,
                 ModDir = dir,
                 Disabled = File.Exists(disabledPath),
                 LoadOrder = loadOrders[manifest.UniqueId]
             };
-
-            var mainAsmPath = Path.Combine(dir, $"{dirName}.dll");
-            if (File.Exists(mainAsmPath))
-            {
-                modMeta.MainAsmPath = mainAsmPath;
-            }
-            else
-            {
-                logger.LogError("Mod {Path} doesn't contain a main assembly named {AsmName}.dll", dir, dirName);
-                continue;
-            }
-
+            
             foreach (var f in Directory.GetFiles(dir, "*.dll", SearchOption.AllDirectories))
             {
                 if (f.EndsWith(".32.dll") || f.EndsWith(".64.dll") ||
@@ -102,7 +96,7 @@ public class ModLocator(PathSettings pathSettings, ILogger logger)
 
                 modMeta.AllAsmPaths.Add(f);
             }
-
+            
             meta.Add(dir, modMeta);
         }
 
