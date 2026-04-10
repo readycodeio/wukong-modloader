@@ -1,4 +1,6 @@
-﻿namespace ReadyM.Loader.Wukong.Bootstrap;
+﻿using System.Text.Json.Serialization;
+
+namespace ReadyM.Loader.Wukong.Bootstrap;
 
 public class ModManifest
 {
@@ -19,7 +21,9 @@ public class ModManifest
 
     public string Author { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public string? Link { get; set; } = null!;
+
+    public string? Description { get; set; } = null!;
 
     public List<ModDependency> Dependencies { get; set; } = [];
 }
