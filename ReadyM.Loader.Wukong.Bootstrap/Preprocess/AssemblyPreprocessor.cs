@@ -23,7 +23,7 @@ public class AssemblyPreprocessor(PreprocessAssemblyResolver resolver, CompileTi
                 // NOTE: Thankfully the actual implementation ignores the version information, so we don't have to know
                 // it beforehand.
                 var modAsmNameRef = new AssemblyNameReference(modAsmName, new Version());
-                var modAsmDef = resolver.Resolve(modAsmNameRef);
+                using var modAsmDef = resolver.Resolve(modAsmNameRef);
 
                 prelude.ScanAndPatchAll(modAsmDef);
             }
