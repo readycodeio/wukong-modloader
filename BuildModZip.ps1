@@ -13,13 +13,6 @@ if (-not (Test-Path $solutionPath)) {
     exit 1
 }
 
-Write-Output "Restoring NuGet packages for $solutionPath..."
-nuget restore $solutionPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "NuGet restore failed with exit code $LASTEXITCODE"
-    exit 1
-}
-
 Write-Output "Building solution $solutionPath in configuration $Configuration..."
 $buildOutput = MSBuild.exe $solutionPath /property:Configuration=$Configuration /property:Platform=x64 /t:Rebuild | Tee-Object -FilePath 'build.log'
 

@@ -9,14 +9,12 @@ $overridesSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $toplevelSourceDir = "ReadyM.Loader.Executable/bin/$Configuration"
 $facadesSourceDir = "ReadyM.Loader.Executable/Facades"
 $binarySourceDir = "Binary"
-$pakSourceDir = "PakFiles"
 $configSourceDir = "Config"
 
 $nativeDestDir = "@GAME/Binaries/Win64"
 $overridesDestDir = "@APPDATA/CSharpLoader/Overrides"
 $facadesDestDir = "@APPDATA/CSharpLoader/Overrides"
 $toplevelDestDir = "@APPDATA/CSharpLoader"
-$pakDestDir = "@GAME/Content/Paks/LogicMods"
 
 # Define the files to copy
 $originalNativeFiles = @(
@@ -85,10 +83,6 @@ $configFiles = @(
     "b1cs.ini",
     "debugger-agent.txt"
 )
-$pakFiles = @(
-    "CoreMp.pak",
-    "WukongMp.pak"
-)
 
 $allFiles = @(
     @($nativeFiles, $nativeSourceDir, $nativeDestDir),
@@ -96,8 +90,7 @@ $allFiles = @(
     @($overridesFiles, $overridesSourceDir, $overridesDestDir),
     @($facadesFiles, $facadesSourceDir, $facadesDestDir),
     @($toplevelFiles, $toplevelSourceDir, $toplevelDestDir),
-    @($configFiles, $configSourceDir, $toplevelDestDir),
-    @($pakFiles, $pakSourceDir, $pakDestDir)
+    @($configFiles, $configSourceDir, $toplevelDestDir)
 )
 
 function CopyFiles($files, $sourceDir, $destDir) {
