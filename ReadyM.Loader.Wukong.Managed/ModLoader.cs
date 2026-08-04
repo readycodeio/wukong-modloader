@@ -2,6 +2,7 @@
 using CSharpModBase;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
+using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using ReadyM.Loader.Wukong.Bootstrap.Registry;
 using ReadyM.Loader.Wukong.Bootstrap.Settings;
 using ReadyM.Loader.Wukong.Managed.Debugger;
@@ -14,7 +15,11 @@ public class ModLoader
     private class ModLoadState
     {
         public string? LoadAsmPath;
-        public ICSharpMod Mod;
+
+        // NOTE: null until the mod type has been found and instantiated. It stays null whenever the assembly
+        // failed to load or exposed no ICSharpMod, so every consumer has to check. Dereferencing it blindly
+        // used to throw inside the catch blocks below, which aborted the whole mod list.
+        public ICSharpMod? Mod;
         public ICSharpModEx? ModEx;
         public ICSharpModExV2? ModExV2;
     }
@@ -221,22 +226,31 @@ public class ModLoader
 
             try
             {
-                _logger.LogTrace("======== Loading {Path} ========", modLoadState.LoadAsmPath);
+                // NOTE: these two are LogDebug rather than LogTrace on purpose. Trace is filtered out in
+                // release, and when the process dies inside a load these are the only lines that say which
+                // file was being loaded: an "Assembly load begin" with no matching "Assembly load end" is
+                // the fingerprint of a hard crash inside the loader.
+                _logger.LogDebug("Assembly load begin: {Path}", modLoadState.LoadAsmPath);
 
                 LoadResourceDlls(dir);
                 var asm = Assembly.LoadFrom(modLoadState.LoadAsmPath);
-                _logger.LogTrace("Loaded: {Path}", modLoadState.LoadAsmPath);
+                _logger.LogDebug("Assembly load end: {AsmName}", asm.FullName);
 
-                foreach (var type in asm.GetTypes())
+                foreach (var type in GetTypesOrEmpty(asm))
                 {
                     if (csharpModType.IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
                     {
                         var baseType = csharpModExV2Type.IsAssignableFrom(type) ? csharpModExV2Type :
                             csharpModExType.IsAssignableFrom(type) ? csharpModExType : csharpModType;
 
-                        _logger.LogTrace("Found {BaseType}: {Type}", baseType, type);
+                        // NOTE: begin/end pairs on the ManagedLoader logger, which flushes per line. The mod's
+                        // own logger buffers, so anything a constructor writes is lost if it takes the process
+                        // down. These lines are what tell us whether a crash was in the ctor or later.
+                        _logger.LogDebug("Instantiate begin: {Type} (as {BaseType})", type.FullName, baseType.Name);
 
                         var modUntyped = Activator.CreateInstance(type);
+                        _logger.LogDebug("Instantiate end: {Type}", type.FullName);
+
                         if (modUntyped == null)
                         {
                             _logger.LogError("Failed to create instance of {TypeName}", type.FullName);
@@ -261,30 +275,79 @@ public class ModLoader
                         modLoadState.ModExV2 = mod as ICSharpModExV2;
                     }
                 }
+
+                if (modLoadState.Mod == null)
+                {
+                    _logger.LogError(
+                        "No ICSharpMod implementation was instantiated from {Path}, the mod will not run",
+                        modLoadState.LoadAsmPath
+                    );
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Loading {Path} failed:", modLoadState.LoadAsmPath);
+                _logger.LogAssemblyLoadDetail(ex);
             }
 
             _currentLoadingState.LoadingModName = null;
         }
     }
 
-    private void LoadResourceDlls(string dir)
+    /// <summary>
+    /// <see cref="Assembly.GetTypes"/> throws when any single type fails to load, which throws away the whole
+    /// mod even though the types we care about may be fine. Take what loaded and report the rest, because
+    /// <see cref="ReflectionTypeLoadException.LoaderExceptions"/> is what names the missing dependency.
+    /// </summary>
+    private IEnumerable<Type> GetTypesOrEmpty(Assembly asm)
     {
         try
         {
-            string[] resourcePaths = Directory.GetFiles(dir, "*.resources.dll", SearchOption.AllDirectories);
-            foreach (var resourcePath in resourcePaths)
+            _logger.LogDebug("GetTypes begin: {AsmName}", asm.FullName);
+            var types = asm.GetTypes();
+            _logger.LogDebug("GetTypes end: {Count} type(s)", types.Length);
+            return types;
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            _logger.LogError(ex, "Some types in {AsmName} could not be loaded, continuing with the rest:", asm.FullName);
+            _logger.LogAssemblyLoadDetail(ex);
+            return ex.Types.Where(t => t != null)!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Enumerating types in {AsmName} failed:", asm.FullName);
+            _logger.LogAssemblyLoadDetail(ex);
+            return [];
+        }
+    }
+
+    private void LoadResourceDlls(string dir)
+    {
+        string[] resourcePaths;
+        try
+        {
+            resourcePaths = Directory.GetFiles(dir, "*.resources.dll", SearchOption.AllDirectories);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Enumerating resources in {Path} failed:", dir);
+            return;
+        }
+
+        // NOTE: one try per file, so a single bad satellite assembly does not skip the remaining ones.
+        foreach (var resourcePath in resourcePaths)
+        {
+            try
             {
                 var resourceAsm = Assembly.LoadFrom(resourcePath);
                 _logger.LogDebug("Loaded resource: {Name}", resourceAsm.FullName);
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Loading resources from {Path} failed:", dir);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Loading resource {Path} failed:", resourcePath);
+                _logger.LogAssemblyLoadDetail(ex);
+            }
         }
     }
 
@@ -301,16 +364,24 @@ public class ModLoader
             var modMeta = _modRegistry.MetaByDir[dir];
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
+            if (modLoadState.Mod is not { } mod)
+            {
+                _logger.LogError("Not initializing {Name}: its assembly did not load, see errors above", modMeta.ModName);
+                _currentLoadingState.LoadingModName = null;
+                continue;
+            }
+
             try
             {
-                modLoadState.Mod.Init();
+                _logger.LogDebug("Init begin: {Name}", modMeta.ModName);
+                mod.Init();
                 Log.Provider.Flush();
                 _modsInitialized.Add(dir);
-                _logger.LogDebug("Initialized: {Name}", modLoadState.Mod.Name);
+                _logger.LogDebug("Initialized: {Name}", mod.Name);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Initializing {Name} failed:", modLoadState.Mod.Name);
+                _logger.LogError(ex, "Initializing {Name} failed:", mod.Name);
                 // log inner exceptions
                 var innerEx = ex.InnerException;
                 while (innerEx != null)
@@ -338,6 +409,8 @@ public class ModLoader
             if (modLoadState.LoadAsmPath is null)
                 continue;
 
+            if (modLoadState.Mod is not { } mod)
+                continue;
 
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -345,16 +418,17 @@ public class ModLoader
             {
                 if (!_modsInitialized.Contains(dir))
                 {
-                    _logger.LogWarning("Skipping late init for not initialized mod: {Name}", modLoadState.Mod.Name);
+                    _logger.LogWarning("Skipping late init for not initialized mod: {Name}", mod.Name);
                     continue;
                 }
 
                 if (modLoadState.ModExV2 != null)
                 {
+                    _logger.LogDebug("LateInit begin: {Name}", modMeta.ModName);
                     modLoadState.ModExV2.LateInit();
                     Log.Provider.Flush();
                     _modsLateInitialized.Add(dir);
-                    _logger.LogDebug("Late Initialized: {Name}", modLoadState.Mod.Name);
+                    _logger.LogDebug("Late Initialized: {Name}", mod.Name);
                 }
 
                 if (reload && modLoadState.ModEx != null)
@@ -362,12 +436,12 @@ public class ModLoader
                     reloadContexts!.TryGetValue(modLoadState.ModEx.Name, out var reloadContext);
                     modLoadState.ModEx.Reload(reloadContext);
                     Log.Provider.Flush();
-                    _logger.LogDebug("Reloaded: {Name}", modLoadState.Mod.Name);
+                    _logger.LogDebug("Reloaded: {Name}", mod.Name);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Initializing {Name} failed:", modLoadState.Mod.Name);
+                _logger.LogError(ex, "Initializing {Name} failed:", mod.Name);
             }
 
             _currentLoadingState.LoadingModName = null;
@@ -386,18 +460,21 @@ public class ModLoader
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
 
+            if (modLoadState.Mod is not { } mod)
+                continue;
+
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
             try
             {
-                modLoadState.Mod.DeInit();
+                mod.DeInit();
                 Log.Provider.Flush();
                 _modsInitialized.Remove(dir);
-                _logger.LogDebug("Deinitialized: {Name}", modLoadState.Mod.Name);
+                _logger.LogDebug("Deinitialized: {Name}", mod.Name);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Deinitializing {Name} failed:", modLoadState.Mod.Name);
+                _logger.LogError(ex, "Deinitializing {Name} failed:", mod.Name);
             }
 
             _currentLoadingState.LoadingModName = null;
@@ -412,20 +489,23 @@ public class ModLoader
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
 
+            if (modLoadState.Mod is not { } mod)
+                continue;
+
             try
             {
                 if (modLoadState.ModEx != null)
                 {
                     var reloadContext = modLoadState.ModEx.GetReloadContext();
                     Log.Provider.Flush();
-                    _logger.LogDebug("Reload context for: {Name}", modLoadState.Mod.Name);
+                    _logger.LogDebug("Reload context for: {Name}", mod.Name);
                     if (reloadContext != null)
                         result.Add(modLoadState.ModEx.Name, reloadContext);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fetching reload context {Name} failed:", modLoadState.Mod.Name);
+                _logger.LogError(ex, "Fetching reload context {Name} failed:", mod.Name);
             }
         }
 

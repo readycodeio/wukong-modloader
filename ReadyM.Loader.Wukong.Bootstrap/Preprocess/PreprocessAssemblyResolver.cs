@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
+using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using ReadyM.Loader.Wukong.Bootstrap.Registry;
 using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
@@ -149,7 +150,21 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
             return asmDef;
         }
 
-        asmDef = _fallbackResolver.Resolve(name, parameters);
+        try
+        {
+            asmDef = _fallbackResolver.Resolve(name, parameters);
+        }
+        catch (Exception ex)
+        {
+            // NOTE: the IAssemblyResolver contract is to throw rather than return null, so this rethrows.
+            // It exists purely so the failure is named in the log: preprocessing runs before the mod loader
+            // has any try/catch of its own, so otherwise this escapes all the way into native code and is
+            // reported as an opaque bootstrap failure.
+            _logger.LogError(ex, "Preprocess resolve failed for {AsmName}", name.FullName);
+            _logger.LogAssemblyLoadDetail(ex);
+            throw;
+        }
+
         AddEntry(asmDef, out _, out _);
         return asmDef!;
     }

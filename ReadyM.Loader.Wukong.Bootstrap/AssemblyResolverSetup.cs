@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using ReadyM.Loader.Wukong.Bootstrap.Logging;
 using ReadyM.Loader.Wukong.Bootstrap.Settings;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
@@ -30,16 +31,39 @@ public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, Path
         var patchedPath = path.Replace(".dll", "_patched.dll");
         if (File.Exists(patchedPath))
         {
-            logger.LogDebug("Success (patched)");
-            return Assembly.LoadFrom(patchedPath);
+            return LoadFromFile(patchedPath, patched: true);
         }
         else if (File.Exists(path))
         {
-            logger.LogDebug("Success");
-            return Assembly.LoadFrom(path);
+            return LoadFromFile(path, patched: false);
         }
-        
+
         return null;
+    }
+
+    private Assembly? LoadFromFile(string path, bool patched)
+    {
+        // NOTE: the "found" line goes out before the load so that a hard crash inside Assembly.LoadFrom is
+        // still attributable to a specific file. The matching "Loaded" line is only written once the load
+        // actually returned, so a log ending on "Found" means the load itself took the process down.
+        if (patched)
+            logger.LogDebug("Found (patched): {Path}", path);
+        else
+            logger.LogDebug("Found: {Path}", path);
+
+        try
+        {
+            var asm = Assembly.LoadFrom(path);
+            logger.LogDebug("Loaded: {AsmName}", asm.FullName);
+            return asm;
+        }
+        catch (Exception ex)
+        {
+            // Returning null instead of letting this escape lets the remaining candidate paths be tried.
+            logger.LogError(ex, "Assembly.LoadFrom failed for {Path}", path);
+            logger.LogAssemblyLoadDetail(ex);
+            return null;
+        }
     }
 
     private Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
@@ -76,13 +100,25 @@ public class AssemblyResolverSetup(CurrentLoadingState currentLoadingState, Path
 
             if (result != null)
                 return result;
+
+            logger.LogWarning(
+                "Could not resolve assembly {Name} (requested by {RequestingAsmName})",
+                args.Name,
+                args.RequestingAssembly?.FullName ?? "<unknown>"
+            );
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Load assembly {Name} failed:", args.Name);
+            logger.LogAssemblyLoadDetail(ex);
         }
 
-        return Assembly.Load(args.Name);
+        // NOTE: must NOT fall back to Assembly.Load(args.Name) here. Mono re-enters this hook for the same
+        // name, so an assembly that genuinely cannot be found recurses until the stack is gone, and a stack
+        // overflow kills the process with no managed stack trace and no further log output. Returning null
+        // lets the runtime finish resolution and raise a normal FileNotFoundException at the call site,
+        // which the caller can catch and log.
+        return null;
     }
     
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)

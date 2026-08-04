@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.Logging;
+using ReadyM.Loader.Wukong.Bootstrap.Logging;
 
 namespace ReadyM.Loader.Wukong.Bootstrap;
 
@@ -34,13 +35,18 @@ public static class EntryPoint
     {
         DI.Instance.BootstrapLogger.LogDebug("Loading mods...");
 
+        var loaderAssemblyPath = Path.Combine(DI.Instance.PathSettings.BaseDir, "CSharpLoader", "ReadyM.Loader.Wukong.Managed.dll");
+
         try
         {
-            _loaderAssembly = Assembly.LoadFrom(Path.Combine(DI.Instance.PathSettings.BaseDir, "CSharpLoader", "ReadyM.Loader.Wukong.Managed.dll"));
+            DI.Instance.BootstrapLogger.LogDebug("Assembly load begin: {Path}", loaderAssemblyPath);
+            _loaderAssembly = Assembly.LoadFrom(loaderAssemblyPath);
+            DI.Instance.BootstrapLogger.LogDebug("Assembly load end: {AsmName}", _loaderAssembly.FullName);
         }
         catch (Exception ex)
         {
-            DI.Instance.BootstrapLogger.LogError(ex, "Error while opening loader assembly");
+            DI.Instance.BootstrapLogger.LogError(ex, "Error while opening loader assembly {Path}", loaderAssemblyPath);
+            DI.Instance.BootstrapLogger.LogAssemblyLoadDetail(ex);
             return;
         }
 
@@ -64,7 +70,10 @@ public static class EntryPoint
         }
         catch (Exception ex)
         {
+            // NOTE: reflection wraps whatever went wrong in a TargetInvocationException, so the detail dump
+            // below is the only thing that names the real failure.
             DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking Init method");
+            DI.Instance.BootstrapLogger.LogAssemblyLoadDetail(ex);
         }
 
         DI.Instance.BootstrapLogger.LogDebug("Loading mods complete.");
@@ -89,6 +98,7 @@ public static class EntryPoint
         catch (Exception ex)
         {
             DI.Instance.BootstrapLogger.LogError(ex, "Error while invoking LateInit method");
+            DI.Instance.BootstrapLogger.LogAssemblyLoadDetail(ex);
         }
 
         DI.Instance.BootstrapLogger.LogDebug("Late loading mods complete.");

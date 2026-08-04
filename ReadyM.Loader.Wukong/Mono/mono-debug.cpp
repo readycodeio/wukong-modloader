@@ -53,7 +53,7 @@ BundledSymfile** get_bundled_symfiles_ptr()
         uint64_t instr_base = bundled_symfiles_user_func_ptr + 15;
         s_bundled_symfiles_ptr = reinterpret_cast<BundledSymfile**>(instr_base + bundled_symfiles_offset);
         
-        log_debug_ptr("bundled_symfiles", bundled_symfiles_user_func_ptr);
+        log_debug_ptr("bundled_symfiles", s_bundled_symfiles_ptr.value());
     }
 
     return s_bundled_symfiles_ptr.value();
