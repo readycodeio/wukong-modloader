@@ -10,6 +10,7 @@
 #include <windows.h>
 
 #include "Config/path.h"
+#include "Mono/bundle_skip_list.h"
 #include "Mono/image.h"
 #include "Logger/logger.h"
 #include "Memory/common.h"
@@ -195,6 +196,16 @@ bool load_and_replace_assembly_bundles(const std::vector<std::filesystem::path>&
                 auto old_bundle = old_bundles[i];
                 if (assembly_name == old_bundle->name)
                 {
+                    if (is_replacement_skipped(assembly_name))
+                    {
+                        // Leave the game's own entry alone and drop our override on the floor. found_old stays
+                        // true so the append path below does not add a second entry under the same name.
+                        log_warn("SkipBundleReplacement: keeping the game's own {} and ignoring our override",
+                                 assembly_name);
+                        found_old = true;
+                        break;
+                    }
+
                     if (std::ranges::find(used_indices, i) != used_indices.end())
                     {
                         log_debug("Not replacing duplicate bundle override: {}", assembly_name);

@@ -25,6 +25,8 @@ public class DI
     public ModLocator ModLocator { get; private set; } = null!;
     public ModRegistry ModRegistry { get; private set; } = null!;
 
+    public LoaderFlags LoaderFlags { get; private set; } = null!;
+
     public LoggerFactoryProvider LoggerProvider
         => _firstStage.LoggerProvider;
 
@@ -45,13 +47,21 @@ public class DI
         
         var allocator = Allocator = new GlibAllocator(glibNew0Ptr);
 
+        var flags = LoaderFlags = new LoaderFlags(PathSettings);
+
+        if (!flags.PatchGameAssemblies)
+        {
+            BootstrapLogger.LogWarning("PatchGameAssemblies=0 in b1cs.ini. The game's own assemblies will NOT be");
+            BootstrapLogger.LogWarning("patched, so WukongMP will not function. This is a diagnostic mode only.");
+        }
+
         var modLocator = ModLocator = new ModLocator(PathSettings, BootstrapLogger);
         var modRegistry = ModRegistry = modLocator.LocateMods();
 
         var compileTimeLogger = firstStageDI.LoggerFactory.CreateLogger("CompileTime");
-        
+
         var bundledAssemblyArray = BundledAssemblyArray = new MonoBundledAssemblyArray((MonoBundledAssembly***)bundledAssemblyArrayPtr);
-        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, PathSettings, modRegistry,  compileTimeLogger);
+        var preprocessAssemblyResolver = PreprocessAssemblyResolver = new PreprocessAssemblyResolver(bundledAssemblyArray, allocator, PathSettings, modRegistry, flags, compileTimeLogger);
         var compileTimeBackend = CompileTimeBackend = new CompileTimeWeaverBackend(compileTimeLogger);
         var compileTimePrelude = CompileTimePrelude = new CompileTimePrelude(compileTimeBackend, compileTimeLogger);
         var assemblyPreprocessor = AssemblyPreprocessor = new AssemblyPreprocessor(preprocessAssemblyResolver, compileTimePrelude, compileTimeLogger);

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include "Config/flags.h"
 #include "Config/logger-config.h"
 #include "Config/path.h"
 #include "Logger/logger.h"
@@ -91,6 +92,9 @@ namespace
     DbgHelp g_dbghelp{};
     bool g_dbghelp_ready = false;
     bool g_symbols_ready = false;
+
+    // Read once at install. See LoaderFlags / CrashHandlerEscalate.
+    bool g_escalate_first_chance = true;
 
     volatile LONG g_exception_seq = 0;
     volatile LONG g_uef_reported = 0;
@@ -880,6 +884,12 @@ namespace
         if (!is_hard_fault(code) || !pointers->ContextRecord)
             return EXCEPTION_CONTINUE_SEARCH;
 
+        // See LoaderFlags / CrashHandlerEscalate: with escalation off the ring above is still recorded, which
+        // costs nothing, but we write nothing here and let whatever normally handles the exception do so
+        // undisturbed. The unhandled filter still reports if it turns out nothing did.
+        if (!g_escalate_first_chance)
+            return EXCEPTION_CONTINUE_SEARCH;
+
         // Throttle, because a hard fault can in principle repeat at a high rate.
         const auto now = static_cast<LONG64>(GetTickCount64());
 
@@ -954,6 +964,13 @@ namespace
 
         wcsncpy_s(g_report_path, report_path.c_str(), WIN32_MAX_PATH - 1);
         wcsncpy_s(g_dump_path, dump_path.c_str(), WIN32_MAX_PATH - 1);
+
+        // The report is recreated every launch, but the dump is only rewritten when one is actually taken, so
+        // a dump from an earlier session would sit next to a clean report and look like it belonged to it.
+        // That happened once and cost a round of analysis. Delete it now, so its presence always means this
+        // run faulted.
+        if (DeleteFileW(g_dump_path))
+            log_debug("Crash handler: removed a minidump left over from an earlier session.");
 
         g_mapping_file = CreateFileW(g_report_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, nullptr,
                                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -1030,6 +1047,10 @@ namespace
 
         out.str("exe image    ");
         write_image_identity(out, GetModuleHandleA(g_main_module_name));
+        out.line();
+
+        out.str("escalation   ");
+        out.str(g_escalate_first_chance ? "on" : "OFF (first chance faults are only ringed)");
         out.line();
 
         out.str("dbghelp      ");
@@ -1130,6 +1151,8 @@ bool install_crash_handler()
     static bool s_installed = false;
     if (s_installed)
         return true;
+
+    g_escalate_first_chance = load_crash_handler_escalate() != 0;
 
     refresh_module_table();
 

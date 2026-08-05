@@ -32,12 +32,14 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
     private readonly ILogger _logger;
     private readonly MonoBundledAssemblyArray _originalArray;
     private readonly int _originalArrayLength;
+    private readonly bool _patchGameAssemblies;
 
-    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator, PathSettings pathSettings, ModRegistry modRegistry, ILogger logger)
+    public PreprocessAssemblyResolver(MonoBundledAssemblyArray array, GlibAllocator allocator, PathSettings pathSettings, ModRegistry modRegistry, LoaderFlags flags, ILogger logger)
     {
         _logger = logger;
         _allocator = allocator;
         _originalArray = array;
+        _patchGameAssemblies = flags.PatchGameAssemblies;
 
         for (var itemPtr = *array.ArrayPtr; *itemPtr != null; itemPtr++)
         {
@@ -205,6 +207,19 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
                 entry.AssemblyDef!.Write(stream);
                 _logger.LogInformation("Writing patched assembly {AssemblyName} to memory", entry.AssemblyDef.Name);
 
+                if (!_patchGameAssemblies)
+                {
+                    // Deliberately stop here: the rewrite happened, so every code path above ran exactly as it
+                    // normally does, but nothing points Mono at the result. See LoaderFlags.PatchGameAssemblies.
+                    _logger.LogWarning(
+                        "PatchGameAssemblies=0, discarding the rewritten {AssemblyName} and keeping the game's original",
+                        entry.AssemblyDef.Name.Name
+                    );
+
+                    _entries[i] = entry;
+                    continue;
+                }
+
                 var newSize = (int)stream.Position;
                 var newData = _allocator.Alloc(newSize);
                 Marshal.Copy(stream.GetBuffer(), 0, newData, newSize);
@@ -248,6 +263,15 @@ public unsafe class PreprocessAssemblyResolver : IAssemblyResolver
             }
 
             _entries[i] = entry;
+        }
+
+        if (!_patchGameAssemblies)
+        {
+            // The new array is an exact copy of the original at this point, so swapping it in would be a no-op.
+            // Not swapping at all is still better: the game's own array is left completely untouched, which
+            // keeps this switch a clean control for the experiment rather than one more variable in it.
+            _logger.LogWarning("PatchGameAssemblies=0, leaving the game's bundled assembly array untouched");
+            return;
         }
 
         // 4. Atomically swap the original array pointer to point to our new, modified array.

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Label="ProjectConfigurations">
         <ProjectConfiguration Include="Debug|Win32">
@@ -209,6 +209,7 @@
         <ClCompile Include="Memory\scanner.cpp" />
         <ClCompile Include="Mono\appdomain.cpp" />
         <ClCompile Include="Mono\assembly.cpp" />
+        <ClCompile Include="Mono\bundle_skip_list.cpp" />
         <ClCompile Include="Mono\debug-helpers.cpp" />
         <ClCompile Include="Mono\domain.cpp" />
         <ClCompile Include="Mono\glib.cpp" />
@@ -238,6 +239,7 @@
         <ClInclude Include="Mono\appdomain.h" />
         <ClInclude Include="Mono\assembly-internals.h" />
         <ClInclude Include="Mono\assembly.h" />
+        <ClInclude Include="Mono\bundle_skip_list.h" />
         <ClInclude Include="Mono\debug-helpers.h" />
         <ClInclude Include="Mono\domain.h" />
         <ClInclude Include="Mono\glib.h" />

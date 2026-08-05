@@ -560,8 +560,19 @@ static bool init_embed_runtime()
 
     if (enable_console_flag == 1)
     {
+        // NOTE: bracketed because a release run's log stopped somewhere in here, with no exception recorded at
+        // all, which means the process left without faulting. Two candidates and both are only reachable with
+        // Console=1: AllocConsole gives the game a console window whose close button terminates the process,
+        // and get_version_string calls GetFileVersionInfo, which reaches VERSION.dll, which resolves to the
+        // proxy version.dll shipped in the game's Binaries folder rather than the system one.
+        log_debug("Creating console");
         create_console();
-        log_info(L"ReadyM WukongMp C# Loader ver. {} {}", get_version_string(), get_title_string());
+        log_debug("Console created, reading the loader version");
+
+        auto version_string = get_version_string();
+        log_debug("Loader version read");
+
+        log_info(L"ReadyM WukongMp C# Loader ver. {} {}", version_string, get_title_string());
     }
 
     auto env = parse_env_file(path);
@@ -655,6 +666,28 @@ static bool init_embed_runtime()
             log_error("Failed to initialize debugger.");
             // NOTE: non-fatal error
         }
+    }
+
+    if (const auto patch_game_assemblies_flag = load_patch_game_assemblies(); !patch_game_assemblies_flag)
+    {
+        log_warn("CSharpLoader PatchGameAssemblies flag: 0 (DIAGNOSTIC MODE, the mod will not function)");
+    }
+    else
+    {
+        log_debug("CSharpLoader PatchGameAssemblies flag: {}", patch_game_assemblies_flag);
+    }
+
+    if (!load_crash_handler_escalate())
+    {
+        log_warn("CSharpLoader CrashHandlerEscalate flag: 0 (DIAGNOSTIC MODE)");
+        log_warn("First chance faults will be recorded in the exception ring only. No report or minidump will");
+        log_warn("be written unless the unhandled exception filter runs.");
+    }
+
+    if (const auto skip_bundle_replacement = load_skip_bundle_replacement(); !skip_bundle_replacement.empty())
+    {
+        log_warn("CSharpLoader SkipBundleReplacement: '{}' (DIAGNOSTIC MODE, the mod may not function)",
+                 skip_bundle_replacement);
     }
 
     log_info("CSharpLoader EnableJit flag: {}", enable_jit_flag);
