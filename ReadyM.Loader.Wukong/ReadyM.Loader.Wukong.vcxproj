@@ -200,6 +200,7 @@
         <ClCompile Include="Config\flags.cpp" />
         <ClCompile Include="Config\logger-config.cpp" />
         <ClCompile Include="Config\path.cpp" />
+        <ClCompile Include="Diagnostics\crash_handler.cpp" />
         <ClCompile Include="dllmain.cpp" />
         <ClCompile Include="EntryDll\dxgi_dll.cpp" />
         <ClCompile Include="Logger\logger.cpp" />
@@ -228,6 +229,7 @@
         <ClInclude Include="Config\flags.h" />
         <ClInclude Include="Config\logger-config.h" />
         <ClInclude Include="Config\path.h" />
+        <ClInclude Include="Diagnostics\crash_handler.h" />
         <ClInclude Include="Logger\logger.h" />
         <ClInclude Include="GameMain\game_main.h" />
         <ClInclude Include="Memory\common.h" />

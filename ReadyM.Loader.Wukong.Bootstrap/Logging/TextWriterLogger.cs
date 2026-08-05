@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Console;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
-internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter writer, ConsoleFormatter consoleFormatter) : ILogger
+internal class TextWriterLogger(string? categoryName, Func<bool> shouldFlush, TextWriter writer, ConsoleFormatter consoleFormatter) : ILogger
 {
     [ThreadStatic]
     private static StringWriter? _stringWriter;
@@ -36,7 +36,7 @@ internal class TextWriterLogger(string? categoryName, bool autoFlush, TextWriter
 
         writer.WriteLine(line);
 
-        if (autoFlush)
+        if (shouldFlush())
         {
             writer.Flush();
         }

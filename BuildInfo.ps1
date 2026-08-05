@@ -23,7 +23,7 @@ $originalNativeFiles = @(
 )
 $nativeFiles = @(
     "dxgi.dll",
-    @("dxgi.pdb", $true)
+    "dxgi.pdb"
 )
 $overridesFiles = @(
     "System.Collections.Immutable.dll",

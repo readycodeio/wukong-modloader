@@ -11,6 +11,7 @@
 #include "Config/debugger.h"
 #include "Config/flags.h"
 #include "Config/path.h"
+#include "Diagnostics/crash_handler.h"
 #include "GameMain/game_main.h"
 #include "Logger/logger.h"
 #include "Mono/appdomain.h"
@@ -546,6 +547,13 @@ static bool init_embed_runtime()
     if (!init_console_logging())
     {
         log_error("Failed to initialize logging.");
+    }
+
+    // Immediately after logging, and before any patching, so a fault anywhere past this point is reported.
+    if (!install_crash_handler())
+    {
+        log_error("Failed to install the crash handler.");
+        // NOTE: non-fatal error
     }
 
     auto enable_console_flag = load_enable_console();

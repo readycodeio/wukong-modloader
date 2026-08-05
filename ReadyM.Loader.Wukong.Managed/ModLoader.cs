@@ -60,6 +60,11 @@ public class ModLoader
 
     public void LoadMods()
     {
+        // Flush every log line for the whole load and init window, then back off in LateInitMods. Without this
+        // a mod that dies inside Init loses the last 100ms of its own log, which is exactly the part that says
+        // what it was doing.
+        Log.Provider.ForceFlush = true;
+
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             _logger.LogDebug("Already loaded: {AssemblyName}", asm.FullName);
@@ -396,6 +401,20 @@ public class ModLoader
     }
 
     public void LateInitMods(bool reload, Dictionary<string, object>? reloadContexts = null)
+    {
+        try
+        {
+            LateInitModsCore(reload, reloadContexts);
+        }
+        finally
+        {
+            // End of the load and init window: from here logging is a gameplay cost, so per-line flushing goes
+            // back off and the log loop thread takes over again.
+            Log.Provider.ForceFlush = false;
+        }
+    }
+
+    private void LateInitModsCore(bool reload, Dictionary<string, object>? reloadContexts)
     {
         foreach (var dir in _modRegistry.ModDirs)
         {

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Console;
 
 namespace ReadyM.Loader.Wukong.Bootstrap.Logging;
 
-internal class ColorConsoleLogger(string? categoryName, bool autoFlush, ConsoleFormatter consoleFormatter) : ILogger
+internal class ColorConsoleLogger(string? categoryName, Func<bool> shouldFlush, ConsoleFormatter consoleFormatter) : ILogger
 {
     public IDisposable BeginScope<TState>(TState state)
         where TState : notnull
@@ -57,7 +57,7 @@ internal class ColorConsoleLogger(string? categoryName, bool autoFlush, ConsoleF
             Console.ForegroundColor = originalColor;
         }
 
-        if (autoFlush)
+        if (shouldFlush())
         {
             Console.Out.Flush();
         }
