@@ -70,11 +70,11 @@ static inline std::string get_timestamp() {
 }
 
 
-static std::mutex& get_log_mutex()
-{
-    static std::mutex s_log_mutex; 
-    return s_log_mutex;
-}
+// NOTE: this must have external linkage and live in logger.cpp. It used to be a `static` function in this
+// header, which gave every translation unit its own mutex while the output streams below stayed shared. So
+// logging from dxgi_dll.cpp on a render thread did not serialise against logging from the game thread, and
+// concurrent operator<< on one std::wostream over one std::filebuf corrupts the stream's internal state.
+std::mutex& get_log_mutex();
 
 
 template<typename... FormatArgs>

@@ -8,6 +8,13 @@
 #include "Config/logger-config.h"
 
 
+std::mutex& get_log_mutex()
+{
+    static std::mutex s_log_mutex;
+    return s_log_mutex;
+}
+
+
 std::optional<std::ostream>& get_log_file_stream()
 {
     static std::optional<std::ostream> s_log_file_stream = std::optional<std::ostream>();
