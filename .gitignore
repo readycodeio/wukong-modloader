@@ -64,3 +64,8 @@ Output
 SymbolServer/
 SymbolServerStaging/
 
+
+# Game assemblies. Never commit these: they are Game Science's property and were
+# purged from this repository's history. Drop a local extraction here to build, or
+# reference the ReadyM.Wukong.GameRefs package instead.
+GameDll/
