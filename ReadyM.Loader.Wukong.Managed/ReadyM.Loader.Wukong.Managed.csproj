@@ -26,13 +26,13 @@
         <PackageReference Include="Mono.Cecil" Version="0.11.6" />
     </ItemGroup>
 
+    <!--
+        Game assemblies come from a reference-only NuGet package: API surface with no method
+        bodies, resolved at compile time only. The real assemblies are already loaded in the
+        game process at runtime, so nothing ships with the loader.
+    -->
     <ItemGroup>
-        <Reference Include="UnrealEngine">
-            <HintPath>..\GameDll\UnrealEngine.dll</HintPath>
-        </Reference>
-        <Reference Include="UnrealEngine.Runtime">
-            <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
-        </Reference>
+        <PackageReference Include="ReadyM.Wukong.GameRefs" Version="1.0.21.23831-preview.1" />
     </ItemGroup>
 
     <ItemGroup>

@@ -14,11 +14,13 @@
         <PackageReference Include="SharpDX.XInput" Version="4.2.0" />
     </ItemGroup>
 
+    <!--
+        Game assemblies come from a reference-only NuGet package: API surface with no method
+        bodies, resolved at compile time only. The real assemblies are already loaded in the
+        game process at runtime, so nothing ships with the loader.
+    -->
     <ItemGroup>
-        <Reference Include="UnrealEngine.Runtime">
-            <HintPath>..\GameDll\UnrealEngine.Runtime.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
+        <PackageReference Include="ReadyM.Wukong.GameRefs" Version="1.0.21.23831-preview.1" />
     </ItemGroup>
 
     <ItemGroup>
