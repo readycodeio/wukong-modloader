@@ -1,3 +1,3 @@
 [submodule "HarmonyPrepatcher"]
 	path = HarmonyPrepatcher
-	url = git@github.com:readycodeio/harmony-prepatcher.git
+	url = https://github.com/readycodeio/harmony-prepatcher.git
