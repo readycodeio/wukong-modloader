@@ -32,7 +32,7 @@
         game process at runtime, so nothing ships with the loader.
     -->
     <ItemGroup>
-        <PackageReference Include="ReadyM.Wukong.GameRefs" Version="1.0.21.23831-preview.1" />
+        <PackageReference Include="ReadyM.Wukong.GameRefs" Version="1.0.21.23831" />
     </ItemGroup>
 
     <ItemGroup>
