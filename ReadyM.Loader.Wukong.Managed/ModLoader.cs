@@ -254,6 +254,9 @@ public class ModLoader
                             var loggerFactory = Log.Provider.CreateLoggerFactory(modExV2.IsDebug, false);
                             modExV2.SetLoggerFactory(loggerFactory);
                             Log.Provider.Flush();
+
+                            // `dir` is the real mod folder, never the reload-mode assembly clone.
+                            modExV2.SetModDirectory(dir);
                         }
 
                         modLoadState.Mod = mod;
