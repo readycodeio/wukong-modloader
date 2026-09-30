@@ -32,6 +32,42 @@ public class ModLoader
     /// Read off the metadata rather than the type, since this runs before the assembly is loaded.
     private const string ModEntryAttributeName = "ReadyM.SDK.Attributes.ModEntryAttribute";
 
+    /// The bases a mod may be entered through, whichever of them it names.
+    private static readonly string[] ModBaseNames = ["ModBase", "ModHostBase"];
+
+    /// <summary>
+    /// Whether the type descends from one of the bases the loader enters a mod through.
+    /// </summary>
+    /// <remarks>
+    /// Walks the chain rather than reading the immediate base's name, so inserting a base between a
+    /// mod and the one it used to name does not quietly stop the assembly being loaded at all.
+    /// Resolution reaches other assemblies and can fail, and a failure here only means this type is
+    /// not one, so it ends the walk rather than the scan.
+    /// </remarks>
+    private static bool DerivesFromModBase(TypeDefinition type)
+    {
+        var baseType = type.BaseType;
+
+        // Capped rather than cycle-checked: no real hierarchy is this deep, and metadata that says
+        // otherwise is not worth following.
+        for (var depth = 0; baseType != null && depth < 16; depth++)
+        {
+            if (ModBaseNames.Contains(baseType.Name))
+                return true;
+
+            try
+            {
+                baseType = baseType.Resolve()?.BaseType;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     private readonly List<string> _modsInitialized = [];
     private readonly List<string> _modsLateInitialized = [];
 
@@ -196,7 +232,7 @@ public class ModLoader
                 });
                 
                 var isMod = assembly.MainModule.Types.Any(t
-                    => t.BaseType != null && t.BaseType.FullName.Contains("ModBase")
+                    => DerivesFromModBase(t)
                        || t.CustomAttributes.Any(a => a.AttributeType.FullName == ModEntryAttributeName));
 
                 if (isMod)
