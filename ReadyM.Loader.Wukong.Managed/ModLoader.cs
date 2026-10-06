@@ -14,7 +14,8 @@ public class ModLoader
     private class ModLoadState
     {
         public string? LoadAsmPath;
-        public ICSharpMod Mod;
+        /// Null for a mod entered through a [ModEntry] class, which the SDK builds out of its container.
+        public ICSharpMod? Mod;
         public ICSharpModEx? ModEx;
         public ICSharpModExV2? ModExV2;
     }
@@ -27,6 +28,37 @@ public class ModLoader
     private readonly ILogger _logger;
 
     private readonly Dictionary<string, ModLoadState> _modLoadState = [];
+
+    /// Read off the metadata rather than the type, since this runs before the assembly is loaded.
+    private const string ModEntryAttributeName = "ReadyM.SDK.Attributes.ModEntryAttribute";
+
+    /// The bases a mod may be entered through, whichever of them it names.
+    private static readonly string[] ModBaseNames = ["ModBase", "ModHostBase"];
+
+    /// <summary>
+    /// Whether the type descends from one of the bases the loader enters a mod through.
+    /// </summary>
+    private static bool DerivesFromModBase(TypeDefinition type)
+    {
+        var baseType = type.BaseType;
+        
+        for (var depth = 0; baseType != null && depth < 16; depth++)
+        {
+            if (ModBaseNames.Contains(baseType.Name))
+                return true;
+
+            try
+            {
+                baseType = baseType.Resolve()?.BaseType;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
 
     private readonly List<string> _modsInitialized = [];
     private readonly List<string> _modsLateInitialized = [];
@@ -55,6 +87,9 @@ public class ModLoader
 
     public void LoadMods()
     {
+        // Filled again below, so a reload does not stack a second copy of every mod onto the first.
+        LoadedMods.Clear();
+
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             _logger.LogDebug("Already loaded: {AssemblyName}", asm.FullName);
@@ -180,7 +215,6 @@ public class ModLoader
                     copiedAsmPath = asmPath;
                 }
 
-                // if the assemly has a type inheriting ModBase, set it as the assembly to load for the mod
                 using var assembly = AssemblyDefinition.ReadAssembly(asmPath, new ReaderParameters
                 {
                     ReadingMode = ReadingMode.Deferred,
@@ -189,8 +223,11 @@ public class ModLoader
                     ReadSymbols = false
                 });
                 
-                var hasModBase = assembly.MainModule.Types.Any(t => t.BaseType != null && t.BaseType.FullName.Contains("ModBase"));
-                if (hasModBase)
+                var isMod = assembly.MainModule.Types.Any(t
+                    => DerivesFromModBase(t)
+                       || t.CustomAttributes.Any(a => a.AttributeType.FullName == ModEntryAttributeName));
+
+                if (isMod)
                 {
                     modLoadState.LoadAsmPath = copiedAsmPath;
                     _logger.LogInformation("Marked assembly for loading: {Path}", copiedAsmPath);
@@ -226,6 +263,10 @@ public class ModLoader
                 LoadResourceDlls(dir);
                 var asm = Assembly.LoadFrom(modLoadState.LoadAsmPath);
                 _logger.LogTrace("Loaded: {Path}", modLoadState.LoadAsmPath);
+
+                // `dir` is the real mod folder, never the reload-mode assembly clone. Left here for
+                // a mod with no instance to push it into, whose entry point is built later.
+                LoadedMods.Add(asm, dir);
 
                 foreach (var type in asm.GetTypes())
                 {
@@ -301,6 +342,12 @@ public class ModLoader
             if (modLoadState.LoadAsmPath is null)
                 continue;
 
+            if (modLoadState.Mod is null)
+            {
+                _modsInitialized.Add(dir);
+                continue;
+            }
+
             var modMeta = _modRegistry.MetaByDir[dir];
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -341,6 +388,8 @@ public class ModLoader
             if (modLoadState.LoadAsmPath is null)
                 continue;
 
+            if (modLoadState.Mod is null)
+                continue;
 
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
@@ -389,6 +438,12 @@ public class ModLoader
             if (!_modLoadState.TryGetValue(dir, out var modLoadState))
                 continue;
 
+            if (modLoadState.Mod is null)
+            {
+                _modsInitialized.Remove(dir);
+                continue;
+            }
+
             _currentLoadingState.LoadingModName = modMeta.ModName;
 
             try
@@ -421,7 +476,7 @@ public class ModLoader
                 {
                     var reloadContext = modLoadState.ModEx.GetReloadContext();
                     Log.Provider.Flush();
-                    _logger.LogDebug("Reload context for: {Name}", modLoadState.Mod.Name);
+                    _logger.LogDebug("Reload context for: {Name}", modLoadState.ModEx.Name);
                     if (reloadContext != null)
                         result.Add(modLoadState.ModEx.Name, reloadContext);
                 }
