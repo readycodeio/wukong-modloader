@@ -3,14 +3,7 @@ using System.Reflection;
 
 namespace CSharpModBase;
 
-/// <summary>
 /// Which folder each mod assembly was loaded from, in load order.
-/// </summary>
-/// <remarks>
-/// The loader pushes a folder into a mod through <see cref="ICSharpModExV2.SetModDirectory"/>, which
-/// needs an instance of it. A mod whose entry point the SDK builds out of its own container has none
-/// while the assemblies are being loaded, so the pairing is left here for whoever builds it.
-/// </remarks>
 public static class LoadedMods
 {
     private static readonly List<ModAssembly> Loaded = new();

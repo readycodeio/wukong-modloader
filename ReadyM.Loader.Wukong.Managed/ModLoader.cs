@@ -38,18 +38,10 @@ public class ModLoader
     /// <summary>
     /// Whether the type descends from one of the bases the loader enters a mod through.
     /// </summary>
-    /// <remarks>
-    /// Walks the chain rather than reading the immediate base's name, so inserting a base between a
-    /// mod and the one it used to name does not quietly stop the assembly being loaded at all.
-    /// Resolution reaches other assemblies and can fail, and a failure here only means this type is
-    /// not one, so it ends the walk rather than the scan.
-    /// </remarks>
     private static bool DerivesFromModBase(TypeDefinition type)
     {
         var baseType = type.BaseType;
-
-        // Capped rather than cycle-checked: no real hierarchy is this deep, and metadata that says
-        // otherwise is not worth following.
+        
         for (var depth = 0; baseType != null && depth < 16; depth++)
         {
             if (ModBaseNames.Contains(baseType.Name))
